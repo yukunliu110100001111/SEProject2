@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: meal_db
+    environment:
+      POSTGRES_DB: meal_recommendation
+      POSTGRES_USER: meal_user
+      POSTGRES_PASSWORD: meal_password
+      # Optional: set timezone
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      # Mount the initialization SQL script
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      # Mount data volume for persistence
+      - meal_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meal_user -d meal_recommendation"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - meal_network
+
+volumes:
+  meal_db_data:
+    driver: local
+
+networks:
+  meal_network:
+    driver: bridge
