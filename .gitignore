@@ -25,6 +25,7 @@ replay_pid*
 
 # IDE files
 .idea/
+.vscode/
 *.iml
 
 # Maven build output
