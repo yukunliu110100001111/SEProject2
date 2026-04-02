@@ -47,3 +47,5 @@ GreenBite will also generate a positive social impact. The system can help emplo
 Upon project completion, HachimiSoft will provide the ByteDance cafeteria with a complete GreenBite platform, supporting personalized meal recommendations, inventory management, and data analysis functions. The system will be accessible via browsers, enabling employees to conveniently view meals and receive recommendations, while supporting managers in optimizing procurement strategies.
 
 GreenBite is expected to reduce ingredient waste and increase cafeteria utilization rates, while simultaneously improving employee health conditions and reducing reliance on food delivery. Through a data-driven approach, GreenBite will help the ByteDance cafeteria achieve a more efficient and sustainable operational model and possesses the potential to be expanded to other corporate cafeterias or university cafeterias.
+
+![alt text](gantt.png)
