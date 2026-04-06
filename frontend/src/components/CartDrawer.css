@@ -1,0 +1,203 @@
+/* 整个背景遮罩层 */
+.cart-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000; /* 比导航栏还要高 */
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+.cart-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 侧边滑出的抽屉本体 */
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: -400px; /* 初始隐藏在屏幕右侧之外 */
+  width: 400px;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: -5px 0 25px rgba(0,0,0,0.1);
+  transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.cart-overlay.open .cart-drawer {
+  right: 0; /* 展开时滑入屏幕 */
+}
+
+/* 抽屉头部 */
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.cart-header h2 {
+  margin: 0;
+  color: #1b4332;
+  font-size: 22px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ff5252;
+}
+
+/* 购物车商品列表区域 */
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* 单个商品项 */
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fdfb;
+  padding: 10px 15px;
+  border-radius: 12px;
+  border: 1px solid #e0f2f1;
+}
+
+.item-info h4 {
+  margin: 0 0 5px 0;
+  color: #2d6a4f;
+  font-size: 15px;
+}
+
+.item-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #74c69d;
+}
+
+.item-price {
+  font-weight: bold;
+  color: #1b4332;
+}
+
+/* 底部结算区域 */
+.cart-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px dashed #e0f2f1;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #52796f;
+}
+
+.summary-total {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1b4332;
+  margin-bottom: 20px;
+}
+
+.checkout-btn {
+  width: 100%;
+  padding: 15px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+  transition: all 0.3s;
+}
+
+.checkout-btn:hover {
+  background: #43a047;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+}
+
+.checkout-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* --- 新增：数量控制器样式 --- */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e0f2f1;
+  padding: 2px;
+}
+
+.qty-btn {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  color: #2d6a4f;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.qty-btn:hover {
+  background: #e9f5ee;
+}
+
+.qty-number {
+  margin: 0 10px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #1b4332;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* 稍微调整一下 item-info 的布局 */
+.item-info {
+  flex: 1;
+}
+
+.item-price {
+  margin-top: 5px;
+  font-weight: bold;
+  color: #1b4332;
+}

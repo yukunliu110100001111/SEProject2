@@ -1,0 +1,172 @@
+.profile-container {
+  min-height: 100vh;
+  background: #f8fbf9;
+  padding-top: 100px;
+  padding-bottom: 50px;
+  font-family: 'PingFang SC', sans-serif;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.profile-avatar {
+  font-size: 64px;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+}
+
+.profile-header h1 {
+  color: #1b4332;
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+
+.profile-uid {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+.profile-content {
+  max-width: 1050px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 35px;
+  padding: 0 25px;
+}
+
+.profile-section {
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  box-shadow: 0 15px 35px rgba(45, 106, 79, 0.05);
+  border: 1px solid rgba(255,255,255,0.8);
+}
+
+.profile-section h2 {
+  font-size: 19px;
+  color: #1b4332;
+  margin-bottom: 25px;
+  border-left: 5px solid #4caf50;
+  padding-left: 15px;
+}
+
+/* 成就卡片样式 */
+.stats-mini-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mini-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #f9fdfb;
+  border-radius: 16px;
+  transition: transform 0.2s;
+}
+
+.mini-card:hover { transform: scale(1.02); }
+
+.mini-info span {
+  color: #64748b;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.mini-info strong {
+  color: #1b4332;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.mini-info strong span {
+  display: inline;
+  font-size: 14px;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.mini-icon { font-size: 24px; opacity: 0.8; }
+
+.stats-footer {
+  margin-top: 25px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* 表单与交互样式 */
+.pref-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-item label {
+  font-size: 14px;
+  color: #2d6a4f;
+  font-weight: 700;
+}
+
+.form-item input, .form-item select {
+  padding: 14px 18px;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1b4332;
+  background: #fff;
+  transition: all 0.3s;
+}
+
+.form-item input:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.08);
+  outline: none;
+}
+
+.form-notice {
+  background: #fffbeb;
+  color: #b45309;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  border-left: 4px solid #f59e0b;
+}
+
+.save-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 20px rgba(76, 175, 80, 0.2);
+}
+
+.save-btn:hover {
+  background: #2d6a4f;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px rgba(45, 106, 79, 0.25);
+}
+
+@media (max-width: 900px) {
+  .profile-content { grid-template-columns: 1fr; }
+}

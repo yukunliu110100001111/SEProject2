@@ -1,0 +1,111 @@
+.login-container {
+  height: 100vh;
+  /* 奶油绿渐变背景 */
+  background: linear-gradient(135deg, #f3fdf9 0%, #e8f5e9 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 装饰性背景光晕 */
+.login-blob {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.15) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+  z-index: 0;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 50px 40px;
+  border-radius: 32px;
+  box-shadow: 0 25px 50px rgba(45, 106, 79, 0.08);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.brand-logo {
+  font-size: 40px;
+  margin-bottom: 20px;
+}
+
+.login-card h2 {
+  color: #1b4332;
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.login-card p {
+  color: #52796f;
+  font-size: 14px;
+  margin-bottom: 35px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 14px 20px;
+  border: 1.5px solid #f0f0f0;
+  border-radius: 14px;
+  box-sizing: border-box;
+  font-size: 15px;
+  background: white;
+  transition: all 0.3s;
+}
+
+.login-card input:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+}
+
+.login-card button {
+  width: 100%;
+  padding: 15px;
+  background: #2d6a4f;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+}
+
+.login-card button:hover {
+  background: #1b4332;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(27, 67, 50, 0.2);
+}
+
+.login-card button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-footer {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 30px;
+  line-height: 1.6;
+}
+
+.login-footer span {
+  color: #2d6a4f;
+  font-weight: 600;
+}

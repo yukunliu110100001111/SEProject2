@@ -1,0 +1,129 @@
+.meal-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  /* 更新：使用更有层次感的柔和双重阴影，更有“悬浮感” */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.04), 0 2px 5px rgba(45, 106, 79, 0.03);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+  position: relative;
+  border: 1px solid #f0f0f0;
+}
+
+.meal-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(45, 106, 79, 0.15);
+}
+
+.meal-image-wrapper {
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.meal-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.meal-card:hover .meal-image {
+  transform: scale(1.1);
+}
+
+.carbon-tag {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(45, 106, 79, 0.85);
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  backdrop-filter: blur(5px);
+}
+
+.meal-info {
+  padding: 20px;
+  text-align: left;
+}
+
+.meal-name {
+  font-size: 18px;
+  /* 更新：明确设为 700 粗体，让菜名更醒目 */
+  font-weight: 700;
+  color: #1b4332;
+  margin-bottom: 8px;
+}
+
+.meal-desc {
+  font-size: 13px;
+  color: #74c69d;
+  line-height: 1.5;
+  height: 40px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.meal-bottom {
+  /* 更新：稍微拉近价格和描述的距离，让信息排版更紧凑 */
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meal-price {
+  color: #2d6a4f;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.add-btn {
+  background: #e9f5ee;
+  color: #2d6a4f;
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.add-btn:hover {
+  background: #2d6a4f;
+  color: white;
+}
+
+/* --- 新增：标签与营养素样式 --- */
+.meal-tags {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.tag-badge {
+  background: #e9f5ee;
+  color: #2d6a4f;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.meal-nutrition {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #52796f;
+  font-weight: 600;
+}

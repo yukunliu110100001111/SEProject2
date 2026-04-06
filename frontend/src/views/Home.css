@@ -1,0 +1,152 @@
+/* 让整个 Home 页面拥有更高级的背景 */
+.home-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f3fdf9 0%, #fefefa 100%);
+  position: relative;
+  overflow-x: hidden;
+  padding: 0;
+  margin: 0;
+  font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 顶部 Hero Section */
+.hero-section {
+  padding: 120px 10% 40px;
+  background-color: transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.welcome-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.user-welcome {
+  color: #1b4332;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.user-welcome span {
+  color: #4caf50;
+  font-weight: 800;
+}
+
+.search-wrapper input {
+  padding: 12px 25px;
+  border-radius: 30px;
+  border: 1px solid rgba(45, 106, 79, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(5px);
+  width: 280px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-wrapper input:focus {
+  width: 320px;
+  border-color: #4caf50;
+  box-shadow: 0 10px 25px rgba(76, 175, 80, 0.1);
+}
+
+.hero-main-title {
+  color: #1b4332;
+  font-size: 52px;
+  font-weight: 900;
+  letter-spacing: -2px;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.hero-main-title span {
+  position: relative;
+  color: #2d6a4f;
+  z-index: 1;
+}
+
+.hero-main-title span::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background: #b7e4c7;
+  opacity: 0.5;
+  z-index: -1;
+  border-radius: 6px;
+}
+
+.hero-sub-title {
+  color: #52796f;
+  font-size: 18px;
+  margin-top: 20px;
+  line-height: 1.6;
+  max-width: 650px;
+  font-weight: 400;
+}
+
+/* 动态极光背景 */
+.bg-blob {
+  position: absolute;
+  filter: blur(100px);
+  z-index: 0;
+  border-radius: 50%;
+  animation: floatBlob 25s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+.blob-1 { top: -5%; left: -5%; width: 550px; height: 550px; background: #d8f3dc; opacity: 0.6; }
+.blob-2 { bottom: 5%; right: -5%; width: 650px; height: 650px; background: #b7e4c7; opacity: 0.4; animation-delay: -7s; }
+.blob-3 { top: 35%; left: 25%; width: 450px; height: 450px; background: #e9f5ee; opacity: 0.5; animation-duration: 30s; }
+
+@keyframes floatBlob {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, 100px) scale(1.15); }
+  100% { transform: translate(-40px, 50px) scale(0.95); }
+}
+
+/* 列表展示区 */
+.list-section {
+  padding: 40px 10% 100px;
+  z-index: 10;
+  position: relative;
+}
+
+.list-header {
+  margin-bottom: 40px;
+  padding-left: 15px;
+  border-left: 5px solid #2d6a4f;
+}
+
+.list-title {
+  color: #1b4332;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.list-title span {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-left: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.meal-grid {
+  display: grid;
+  /* 拼写修正：grid-template-columns */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 35px;
+}
+
+@media (max-width: 768px) {
+  .hero-section { padding: 100px 5% 30px; }
+  .hero-main-title { font-size: 36px; }
+  .search-wrapper input { width: 100%; }
+  .welcome-bar { flex-direction: column; align-items: flex-start; gap: 15px; }
+}
