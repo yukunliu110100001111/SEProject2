@@ -54,6 +54,19 @@
   font: inherit;
 }
 
+.staff-file-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #2d6a4f;
+  font-weight: 700;
+}
+
+.staff-file-field input {
+  padding: 10px 0;
+  border: none;
+}
+
 .staff-form button,
 .staff-list-item button {
   border: none;
@@ -84,6 +97,38 @@
 .staff-list-item p {
   color: #64748b;
   font-size: 14px;
+}
+
+.staff-image-hint {
+  color: #166534;
+  font-weight: 600;
+}
+
+.staff-image-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fbf8;
+}
+
+.staff-image-preview img {
+  width: 100%;
+  max-width: 320px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.staff-clear-image {
+  align-self: flex-start;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 700;
 }
 
 .staff-item-actions {

@@ -4,6 +4,7 @@ import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import CartDrawer from '../components/CartDrawer';
 import MealCard from '../components/MealCard';
 import Navbar from '../components/Navbar';
+import { getMealImageMap } from '../utils/storage';
 import './Home.css';
 
 const Home = ({
@@ -56,7 +57,13 @@ const Home = ({
           return;
         }
 
-        setMeals(detailList);
+        const imageMap = getMealImageMap();
+        setMeals(
+          detailList.map((meal) => ({
+            ...meal,
+            imageUrl: imageMap[String(meal.mealId)] || meal.imageUrl,
+          }))
+        );
         setRecommendations(recommendationList);
       } catch (err) {
         if (active) {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import Navbar from '../components/Navbar';
+import { getMealImageMap } from '../utils/storage';
 import './MealDetail.css';
 
 const fallbackImage =
@@ -27,11 +28,13 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
         if (!active) {
           return;
         }
+        const imageMap = getMealImageMap();
         const mealSummary =
           mealList.find((item) => String(item.mealId) === String(mealId)) || {};
         setMeal({
           ...mealSummary,
           ...mealData,
+          imageUrl: imageMap[String(mealId)] || mealData.imageUrl || mealSummary.imageUrl,
           sustainabilityScore:
             mealData.sustainabilityScore ?? mealSummary.sustainabilityScore,
         });
@@ -62,7 +65,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
 
         {meal && (
           <div className="detail-card">
-            <img src={fallbackImage} alt={meal.name} className="detail-image" />
+            <img src={meal.imageUrl || fallbackImage} alt={meal.name} className="detail-image" />
             <div className="detail-content">
               <h1>{meal.name}</h1>
               <p className="detail-description">{meal.description || '暂无描述'}</p>

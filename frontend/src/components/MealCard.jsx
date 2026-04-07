@@ -8,7 +8,7 @@ const MealCard = ({ meal, onAdd, onClick, recommendation }) => (
   <article className="meal-card">
     <button className="meal-card-hitbox" type="button" onClick={onClick}>
       <div className="meal-image-wrapper">
-        <img src={fallbackImage} alt={meal.name} className="meal-image" />
+        <img src={meal.imageUrl || fallbackImage} alt={meal.name} className="meal-image" />
         <div className="carbon-tag">环保分 {meal.sustainabilityScore ?? '-'}/10</div>
       </div>
 

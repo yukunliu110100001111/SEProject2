@@ -71,10 +71,13 @@
 任务：
 
 - 在 `GET /meals/{id}` 响应中补充 `sustainabilityScore`
+- 为菜品增加展示图片能力
+- 支持前端通过文件上传而不是手填 URL
 
 目标：
 
 - 保证菜品详情页只用一个详情接口即可完整渲染
+- 让员工上传菜品图片后能够真正写入后端并跨设备生效
 
 验收标准：
 
@@ -85,8 +88,40 @@
   - `calories`
   - `protein`
   - `sustainabilityScore`
+  - `imageUrl`
   - `ingredients`
   - `tags`
+
+补充要求：
+
+- `GET /meals` 返回中也应包含 `imageUrl`
+- 菜品图片应通过文件上传接口获得 `imageUrl`
+- 前端不再依赖本地 data URL 缓存保存图片
+
+建议后端补充：
+
+- 新增上传接口：`POST /uploads/images`
+- 或新增菜品图片接口：`POST /meals/{id}/image`
+
+建议请求格式：
+
+- `multipart/form-data`
+- 文件字段名建议统一为 `file`
+
+建议返回格式：
+
+```json
+{
+  "imageUrl": "/uploads/meals/meal-1-cover.jpg"
+}
+```
+
+建议同时补充：
+
+- 文件类型校验，仅允许图片
+- 文件大小限制
+- 静态资源访问路径
+- 替换旧图时的清理策略
 
 ---
 

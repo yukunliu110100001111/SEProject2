@@ -11,6 +11,9 @@ import {
 } from '../api/app';
 import Navbar from '../components/Navbar';
 import {
+  getMealImageMap,
+  removeMealImage,
+  saveMealImage,
   getStaffIngredientCache,
   saveStaffIngredientCache,
 } from '../utils/storage';
@@ -23,6 +26,7 @@ const emptyMealForm = {
   calories: '',
   protein: '',
   sustainabilityScore: '',
+  imageUrl: '',
   tagsInput: '',
   ingredientsInput: '',
 };
@@ -75,7 +79,13 @@ const Staff = ({ auth, cartCount, onLogout }) => {
     setError('');
     const mealList = await getMeals();
     const detailedMeals = await Promise.all(mealList.map((meal) => getMealDetail(meal.mealId)));
-    setMeals(detailedMeals);
+    const imageMap = getMealImageMap();
+    setMeals(
+      detailedMeals.map((meal) => ({
+        ...meal,
+        imageUrl: imageMap[String(meal.mealId)] || meal.imageUrl || '',
+      }))
+    );
 
     const dedup = new Map();
     detailedMeals.forEach((meal) => {
@@ -96,6 +106,27 @@ const Staff = ({ auth, cartCount, onLogout }) => {
     refreshData().catch((err) => setError(err.message || '员工数据加载失败'));
   }, []);
 
+  const handleMealImageChange = (file) => {
+    if (!file) {
+      setMealForm((current) => ({ ...current, imageUrl: '' }));
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setError('请选择图片文件');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setMealForm((current) => ({
+        ...current,
+        imageUrl: typeof reader.result === 'string' ? reader.result : '',
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleMealSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -114,9 +145,11 @@ const Staff = ({ auth, cartCount, onLogout }) => {
     try {
       if (mealForm.mealId) {
         await updateMeal(mealForm.mealId, payload);
+        saveMealImage(mealForm.mealId, mealForm.imageUrl.trim());
         setMessage(`菜品 #${mealForm.mealId} 已更新`);
       } else {
-        await createMeal(payload);
+        const created = await createMeal(payload);
+        saveMealImage(created.mealId, mealForm.imageUrl.trim());
         setMessage('新菜品已创建');
       }
       setMealForm(emptyMealForm);
@@ -134,6 +167,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
       calories: meal.calories || '',
       protein: meal.protein || '',
       sustainabilityScore: meal.sustainabilityScore || '',
+      imageUrl: meal.imageUrl || '',
       tagsInput: (meal.tags || []).join(', '),
       ingredientsInput: (meal.ingredients || [])
         .map((ingredient) => `${ingredient.ingredientId}:${ingredient.weight_g}`)
@@ -146,6 +180,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
     setMessage('');
     try {
       await deleteMeal(mealId);
+      removeMealImage(mealId);
       setMessage(`菜品 #${mealId} 已删除`);
       await refreshData();
     } catch (err) {
@@ -252,6 +287,26 @@ const Staff = ({ auth, cartCount, onLogout }) => {
                 }
                 required
               />
+              <label className="staff-file-field">
+                <span>选择展示图片</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleMealImageChange(e.target.files?.[0])}
+                />
+              </label>
+              {mealForm.imageUrl && (
+                <div className="staff-image-preview">
+                  <img src={mealForm.imageUrl} alt="菜品预览" />
+                  <button
+                    type="button"
+                    className="staff-clear-image"
+                    onClick={() => setMealForm((current) => ({ ...current, imageUrl: '' }))}
+                  >
+                    清除图片
+                  </button>
+                </div>
+              )}
               <input
                 type="text"
                 placeholder="标签，逗号分隔"
@@ -277,6 +332,9 @@ const Staff = ({ auth, cartCount, onLogout }) => {
                       #{meal.mealId} {meal.name}
                     </strong>
                     <p>{meal.description}</p>
+                    {meal.imageUrl && (
+                      <p className="staff-image-hint">已配置展示图片</p>
+                    )}
                   </div>
                   <div className="staff-item-actions">
                     <button type="button" onClick={() => handleEditMeal(meal)}>
