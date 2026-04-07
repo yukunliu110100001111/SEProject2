@@ -24,6 +24,8 @@
   color: #1b4332;
   cursor: pointer;
   letter-spacing: -0.5px;
+  border: none;
+  background: transparent;
 }
 
 .nav-logo span { color: #74c69d; }
@@ -75,6 +77,19 @@
   border-color: #2d6a4f;
 }
 
+.staff-link {
+  background: #fff7ed;
+  color: #9a3412 !important;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(154, 52, 18, 0.12);
+}
+
+.staff-link.active-link {
+  background: #ffedd5 !important;
+  border-color: #9a3412;
+}
+
 .nav-actions {
   display: flex;
   align-items: center;
@@ -95,6 +110,8 @@
   cursor: pointer;
   position: relative;
   transition: transform 0.2s;
+  border: none;
+  background: transparent;
 }
 
 .cart-icon:hover { transform: scale(1.1); }

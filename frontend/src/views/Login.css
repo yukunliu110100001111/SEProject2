@@ -103,9 +103,25 @@
   color: #94a3b8;
   margin-top: 30px;
   line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .login-footer span {
   color: #2d6a4f;
   font-weight: 600;
+}
+
+.register-link {
+  margin-top: 10px;
+  color: #1b4332;
+  font-weight: 700;
+}
+
+.login-error {
+  color: #b91c1c;
+  font-size: 13px;
+  margin: 0 0 12px;
+  text-align: left;
 }

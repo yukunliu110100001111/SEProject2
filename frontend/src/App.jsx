@@ -1,79 +1,167 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import './App.css';
+import Dashboard from './views/Dashboard';
 import Home from './views/Home';
+import Login from './views/Login';
+import MealDetail from './views/MealDetail';
 import Orders from './views/Orders';
 import Profile from './views/Profile';
-import Dashboard from './views/Dashboard';
-import Login from './views/Login';
+import Register from './views/Register';
+import Staff from './views/Staff';
+import {
+  clearSession,
+  getCart,
+  getSession,
+  saveCart,
+} from './utils/storage';
 
 function App() {
-  // 1. 从存储初始化 Auth 状态 [对接 API 2.1 登录成功后的结果]
-  const [auth, setAuth] = useState({
-    token: localStorage.getItem('greenbite_token'),
-    role: localStorage.getItem('greenbite_role')
-  });
+  const [auth, setAuth] = useState(getSession());
+  const [cart, setCart] = useState(getCart());
 
-  // 2. 登录成功回调：从 Login.jsx 触发
-  const updateAuth = () => {
-    setAuth({
-      token: localStorage.getItem('greenbite_token'),
-      role: localStorage.getItem('greenbite_role')
+  const isAuthenticated = Boolean(auth.token);
+  const role = auth.role;
+
+  const cartCount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart]
+  );
+
+  const handleLogin = () => {
+    setAuth(getSession());
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    saveCart([]);
+    setCart([]);
+    setAuth({ token: null, role: null, userId: null, username: null });
+  };
+
+  const updateCart = (updater) => {
+    setCart((current) => {
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      saveCart(next);
+      return next;
     });
   };
 
-  // 3. 退出登录：由 Navbar 经各页面透传触发
-  const clearAuth = () => {
-    // 彻底清除 API 相关的所有标识符
-    localStorage.removeItem('greenbite_token');
-    localStorage.removeItem('greenbite_role');
-    localStorage.removeItem('greenbite_userId');
-    localStorage.removeItem('greenbite_username');
-
-    // 清除状态，触发全站重定向至 /login
-    setAuth({ token: null, role: null });
+  const addToCart = (meal, quantity = 1) => {
+    updateCart((current) => {
+      const existing = current.find((item) => item.mealId === meal.mealId);
+      if (existing) {
+        return current.map((item) =>
+          item.mealId === meal.mealId
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+      return [...current, { ...meal, quantity }];
+    });
   };
 
-  const isAuthenticated = !!auth.token;
-  const isAdmin = auth.role === 'admin';
+  const updateCartQuantity = (mealId, delta) => {
+    updateCart((current) =>
+      current
+        .map((item) =>
+          item.mealId === mealId
+            ? { ...item, quantity: item.quantity + delta }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const clearCart = () => updateCart([]);
+
+  const sharedProps = {
+    auth,
+    cart,
+    cartCount,
+    onAuthRefresh: handleLogin,
+    onLogout: handleLogout,
+    onAddToCart: addToCart,
+    onUpdateCartQuantity: updateCartQuantity,
+    onClearCart: clearCart,
+  };
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* 【登录路由】 */}
         <Route
           path="/login"
-          element={!isAuthenticated ? <Login onLoginSuccess={updateAuth} /> : <Navigate to="/home" replace />}
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <Login onLoginSuccess={handleLogin} />
+            )
+          }
         />
-
-        {/* 【普通用户路由】 - 包含权限拦截 */}
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <Register onRegisterSuccess={handleLogin} />
+            )
+          }
+        />
         <Route
           path="/home"
-          element={isAuthenticated ? <Home onLogout={clearAuth} /> : <Navigate to="/login" replace />}
+          element={
+            isAuthenticated ? <Home {...sharedProps} /> : <Navigate to="/login" replace />
+          }
         />
-
+        <Route
+          path="/meals/:mealId"
+          element={
+            isAuthenticated ? (
+              <MealDetail {...sharedProps} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
         <Route
           path="/orders"
-          element={isAuthenticated ? <Orders onLogout={clearAuth} /> : <Navigate to="/login" replace />}
+          element={
+            isAuthenticated ? <Orders {...sharedProps} /> : <Navigate to="/login" replace />
+          }
         />
-
         <Route
           path="/profile"
-          element={isAuthenticated ? <Profile onLogout={clearAuth} /> : <Navigate to="/login" replace />}
+          element={
+            isAuthenticated ? <Profile {...sharedProps} /> : <Navigate to="/login" replace />
+          }
         />
-
-        {/* 【管理员专属路由】 - 严格执行角色校验 */}
+        <Route
+          path="/staff"
+          element={
+            isAuthenticated && (role === 'staff' || role === 'admin') ? (
+              <Staff {...sharedProps} />
+            ) : (
+              <Navigate to="/home" replace />
+            )
+          }
+        />
         <Route
           path="/dashboard"
           element={
-            isAuthenticated && isAdmin
-              ? <Dashboard onLogout={clearAuth} />
-              : <Navigate to="/home" replace />
+            isAuthenticated && role === 'admin' ? (
+              <Dashboard {...sharedProps} />
+            ) : (
+              <Navigate to="/home" replace />
+            )
           }
         />
-
-        {/* 【全局分流与 404 处理】 */}
-        <Route path="/" element={<Navigate to={isAuthenticated ? "/home" : "/login"} replace />} />
-        <Route path="*" element={<Navigate to="/home" replace />} />
+        <Route
+          path="/"
+          element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
+        />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>
   );

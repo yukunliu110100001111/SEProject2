@@ -1,143 +1,209 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { getUser, updatePreferences, updateUser } from '../api/app';
 import Navbar from '../components/Navbar';
+import { getOrderCache } from '../utils/storage';
 import './Profile.css';
 
-const Profile = ({ onLogout }) => {
-  // 从 Auth 模块写入的存储中获取身份信息
-  const userId = localStorage.getItem('greenbite_userId');
-  const username = localStorage.getItem('greenbite_username') || '健康食客';
+const parseAllergens = (value) =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 
-  // 1. 用户健康偏好状态 (精准对接 API 3.2 字段)
-  const [preferences, setPreferences] = useState({
+const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
+  const [profile, setProfile] = useState({
+    username: auth.username || '',
     targetCalories: 2000,
     targetProtein: 80,
-    isVegetarian: false // 对接 API 3.2 的布尔值
+    isVegetarian: false,
+    allergensInput: '',
   });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // 2. 模拟从 API/订单历史计算的成就数据
-  const [achievements, setAchievements] = useState({
-    totalCalories: 0,
-    totalProtein: 0,
-    orderCount: 0
-  });
+  const achievements = useMemo(() => {
+    const orders = getOrderCache();
+    return orders.reduce(
+      (sum, order) => ({
+        orderCount: sum.orderCount + 1,
+        totalCalories: sum.totalCalories + Number(order.totalCalories || 0),
+        totalProtein: sum.totalProtein + Number(order.totalProtein || 0),
+      }),
+      {
+        orderCount: 0,
+        totalCalories: 0,
+        totalProtein: 0,
+      }
+    );
+  }, []);
 
   useEffect(() => {
-    // 逻辑：读取订单数据来累积成就 [对应 API 6.2 历史查询]
-    const savedOrders = JSON.parse(localStorage.getItem('greenbite_mock_orders')) || [];
-    let cal = 0, pro = 0;
-    savedOrders.forEach(o => {
-      cal += Number(o.totalCalories) || 0;
-      pro += Number(o.totalProtein) || 0;
-    });
+    let active = true;
 
-    setAchievements({
-      totalCalories: cal,
-      totalProtein: pro,
-      orderCount: savedOrders.length
-    });
+    const loadProfile = async () => {
+      try {
+        const data = await getUser(auth.userId);
+        if (!active) {
+          return;
+        }
+        setProfile({
+          username: data.username || '',
+          targetCalories: data.preferences?.targetCalories ?? 2000,
+          targetProtein: data.preferences?.targetProtein ?? 80,
+          isVegetarian: Boolean(data.preferences?.isVegetarian),
+          allergensInput: (data.preferences?.allergens || []).join(', '),
+        });
+      } catch (err) {
+        if (active) {
+          setError(err.message || '资料加载失败');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
 
-    // 读取已保存的偏好设置，若无则使用默认值
-    const savedPrefs = JSON.parse(localStorage.getItem(`prefs_${userId}`));
-    if (savedPrefs) setPreferences(savedPrefs);
-  }, [userId]);
+    loadProfile();
+    return () => {
+      active = false;
+    };
+  }, [auth.userId]);
 
-  // 3. 处理偏好设置更新 (模拟 PUT /users/{id}/preferences)
-  const handleUpdatePreferences = (e) => {
-    e.preventDefault();
-    // 模拟 API 调用逻辑
-    localStorage.setItem(`prefs_${userId}`, JSON.stringify(preferences));
+  const handleChange = (key, value) => {
+    setProfile((current) => ({ ...current, [key]: value }));
+  };
 
-    // 触发一个成功的交互反馈
-    const btn = e.target.querySelector('.save-btn');
-    btn.innerText = '已同步至云端...';
-    btn.style.background = '#1b4332';
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    setMessage('');
 
-    setTimeout(() => {
-      btn.innerText = '保存并同步偏好';
-      btn.style.background = '#4caf50';
-      alert(`✅ 嘿 ${username}，您的健康目标已更新！\n我们将根据 ${preferences.targetCalories}kcal 的目标为您推荐菜品。`);
-    }, 1000);
+    try {
+      await updateUser(auth.userId, { username: profile.username });
+      await updatePreferences(auth.userId, {
+        targetCalories: Number(profile.targetCalories),
+        targetProtein: Number(profile.targetProtein),
+        isVegetarian: profile.isVegetarian,
+        allergens: parseAllergens(profile.allergensInput),
+      });
+      localStorage.setItem('greenbite_username', profile.username);
+      onAuthRefresh?.();
+      setMessage('个人信息与饮食偏好已更新。');
+    } catch (err) {
+      setError(err.message || '保存失败');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="profile-container">
-      <Navbar cartCount={0} onOpenCart={() => {}} onLogout={onLogout} />
+      <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
 
       <div className="profile-header">
         <div className="profile-avatar">🥗</div>
-        <h1>{username} 的健康档案</h1>
-        <p className="profile-uid">账户 ID: GB-{userId?.padStart(4, '0')}</p>
+        <h1>{profile.username || auth.username} 的健康档案</h1>
+        <p className="profile-uid">账户 ID: GB-{String(auth.userId).padStart(4, '0')}</p>
       </div>
 
       <div className="profile-content">
-        {/* 左侧：数据成就看板 */}
         <div className="profile-section stats-section">
-          <h2>📊 累计营养足迹</h2>
+          <h2>累计营养足迹</h2>
           <div className="stats-mini-grid">
             <div className="mini-card">
               <div className="mini-info">
                 <span>总能量摄入</span>
-                <strong>{achievements.totalCalories} <span>kcal</span></strong>
+                <strong>
+                  {achievements.totalCalories} <span>kcal</span>
+                </strong>
               </div>
               <div className="mini-icon">🔥</div>
             </div>
             <div className="mini-card">
               <div className="mini-info">
                 <span>总蛋白质摄入</span>
-                <strong>{achievements.totalProtein} <span>g</span></strong>
+                <strong>
+                  {achievements.totalProtein} <span>g</span>
+                </strong>
               </div>
               <div className="mini-icon">💪</div>
             </div>
             <div className="mini-card">
               <div className="mini-info">
-                <span>已完成订单</span>
-                <strong>{achievements.orderCount} <span>单</span></strong>
+                <span>已提交订单</span>
+                <strong>
+                  {achievements.orderCount} <span>单</span>
+                </strong>
               </div>
               <div className="mini-icon">📦</div>
             </div>
           </div>
-          <p className="stats-footer">数据基于您的订单历史自动汇总</p>
+          <p className="stats-footer">订单历史来自前端缓存，后端当前未提供查询接口。</p>
         </div>
 
-        {/* 右侧：健康目标设置 [对应 API 3.2] */}
         <div className="profile-section settings-section">
-          <h2>🎯 目标与偏好设定</h2>
-          <form onSubmit={handleUpdatePreferences} className="pref-form">
-            <div className="form-item">
-              <label>每日热量目标 (Calories)</label>
-              <input
-                type="number"
-                placeholder="例如: 2000"
-                value={preferences.targetCalories}
-                onChange={e => setPreferences({...preferences, targetCalories: e.target.value})}
-                required
-              />
-            </div>
-            <div className="form-item">
-              <label>每日蛋白质目标 (Protein g)</label>
-              <input
-                type="number"
-                placeholder="例如: 80"
-                value={preferences.targetProtein}
-                onChange={e => setPreferences({...preferences, targetProtein: e.target.value})}
-                required
-              />
-            </div>
-            <div className="form-item">
-              <label>特殊饮食习惯</label>
-              <select
-                value={preferences.isVegetarian}
-                onChange={e => setPreferences({...preferences, isVegetarian: e.target.value === 'true'})}
-              >
-                <option value="false">均衡饮食 (含肉类)</option>
-                <option value="true">素食优先 (Vegetarian)</option>
-              </select>
-            </div>
-            <div className="form-notice">
-              ⚠️ 更新偏好将直接影响 <strong>5.1 推荐模块</strong> 的排序分值。
-            </div>
-            <button type="submit" className="save-btn">保存并同步偏好</button>
-          </form>
+          <h2>目标与偏好设定</h2>
+          {loading ? (
+            <div className="message-box">正在加载资料...</div>
+          ) : (
+            <form onSubmit={handleSubmit} className="pref-form">
+              <div className="form-item">
+                <label>用户名</label>
+                <input
+                  type="text"
+                  value={profile.username}
+                  onChange={(e) => handleChange('username', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-item">
+                <label>每日热量目标</label>
+                <input
+                  type="number"
+                  value={profile.targetCalories}
+                  onChange={(e) => handleChange('targetCalories', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-item">
+                <label>每日蛋白质目标</label>
+                <input
+                  type="number"
+                  value={profile.targetProtein}
+                  onChange={(e) => handleChange('targetProtein', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-item">
+                <label>特殊饮食习惯</label>
+                <select
+                  value={String(profile.isVegetarian)}
+                  onChange={(e) => handleChange('isVegetarian', e.target.value === 'true')}
+                >
+                  <option value="false">均衡饮食</option>
+                  <option value="true">素食优先</option>
+                </select>
+              </div>
+              <div className="form-item">
+                <label>过敏原限制</label>
+                <input
+                  type="text"
+                  placeholder="例如: nut, fish, soy"
+                  value={profile.allergensInput}
+                  onChange={(e) => handleChange('allergensInput', e.target.value)}
+                />
+              </div>
+              {message && <div className="message-box success-box">{message}</div>}
+              {error && <div className="message-box error-box">{error}</div>}
+              <button type="submit" className="save-btn" disabled={saving}>
+                {saving ? '保存中...' : '保存偏好'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

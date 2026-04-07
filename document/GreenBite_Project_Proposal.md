@@ -1,160 +1,49 @@
 # Project Proposal
+**GreenBite: A Sustainable and Healthy Meal Recommendation Platform for Corporate Cafeterias**
 
-## GreenBite: A Sustainable Healthy Meal Recommendation Platform for Small Food Businesses
+## 1. Project Overview
+HachimiSoft is a software company focusing on enterprise digital solutions, dedicated to helping enterprises improve operational efficiency and achieve sustainable development through data-driven software systems. To help large enterprises optimize employee diet management and cafeteria operational efficiency, HachimiSoft proposes the GreenBite sustainable healthy meal recommendation platform, and targets the ByteDance corporate cafeteria as a potential client for product promotion.
 
-### 1. Project Overview
-GreenBite is a web-based platform designed for small food businesses such as healthy meal shops, cafes, or company canteens. The system recommends meals to users based on their dietary needs and preferences, while also helping the business operate more sustainably by reducing ingredient waste, encouraging lower-carbon meal choices, and improving visibility of sustainability-related data.
+As the scale of internet enterprises continues to expand, the operational complexity of corporate cafeterias is constantly increasing. Large tech companies typically have thousands or even tens of thousands of employees. With flexible working hours and scattered dining times, it is difficult for cafeterias to accurately predict daily demand. Meanwhile, different employees have diverse dietary preferences and health needs, such as fat loss, high protein, low calorie, or vegetarian diets, whereas traditional corporate cafeterias often lack personalized recommendation capabilities. Furthermore, an increasing number of employees tend to choose food delivery over dining in the cafeteria. This not only reduces the utilization rate of the cafeteria but may also lead to the intake of high-fat, high-salt, and high-calorie foods, negatively impacting employee health and increasing single-use packaging waste.
 
-The idea is not just to build a general "healthy eating website," but to create a software solution that helps a business make better decisions about food, stock usage, and menu design. This matches the project brief, which asks for a solution that helps a client make their business more sustainable.
+Based on these issues, the GreenBite platform aims to help the ByteDance cafeteria optimize operational efficiency, reduce food waste, and improve employee health conditions through intelligent meal recommendations, inventory management, and data analysis functions. GreenBite is not just a meal recommendation system, but a comprehensive solution supporting corporate cafeterias in achieving sustainable development and health management.
 
-### 2. Problem Statement
-Many small food businesses want to offer healthy meals, but they often face three connected problems:
+## 2. Problem Background and Client
+As a large internet enterprise, ByteDance has a massive number of employees and provides corporate cafeteria services. However, due to the significant uncertainty in employee dining behaviors, the cafeteria finds it difficult to accurately predict daily meal demands. Traditional procurement methods usually rely on historical experience for judgment, which makes it difficult to cope with changes in employee demand. For example, on certain workdays, due to meetings, overtime, or remote work, some employees reduce their dining in the cafeteria, leading to the prepared ingredients not being fully utilized, thus generating food waste. At the same time, some popular meals may sell out early, affecting the employee experience and prompting them to turn to food delivery platforms.
 
-1. Customers do not know which meals are healthy and suitable for them.
-2. Businesses do not know how to reduce food waste effectively.
-3. Businesses rarely consider the environmental impact of their menu choices.
+Moreover, employees usually lack nutritional information references when selecting meals. Many employees wish to improve their dietary structure, such as choosing low-calorie or high-protein meals, but the cafeteria generally does not provide relevant data support. At the same time, cafeteria managers also find it challenging to analyze meal popularity or ingredient waste conditions. The lack of data support makes it difficult for the cafeteria to optimize procurement strategies, thereby increasing operational costs.
 
-At the same time, the client in the brief is new to sustainability and expects the team to make recommendations, not just build a generic website. Therefore, this project aims to provide both a practical meal recommendation service and a simple sustainability support tool for business owners.
+Therefore, the ByteDance cafeteria faces two main challenges: first, the difficulty in accurately predicting ingredient replenishment demands leads to waste; second, the high reliance of employees on food delivery affects their health and reduces the utilization rate of the cafeteria. HachimiSoft believes that the ByteDance cafeteria has excellent potential for digital upgrades and promotes GreenBite as the digital upgrade solution for the cafeteria.
 
-### 3. Target Client
-The target client is a **small food-related business**, for example:
+## 3. Solution
+The GreenBite platform will provide the ByteDance cafeteria with an intelligent meal recommendation and inventory management system. Employees can view the daily menu through the system and receive personalized recommendations based on their personal health goals, such as fat loss, high protein, or low-calorie meals. This approach can enhance the attractiveness of the cafeteria and reduce instances of employees ordering food delivery.
 
-- a healthy meal-prep shop,
-- a cafe with lunch bowls and salads,
-- a company canteen.
+The system will also combine inventory data and historical dining data to prioritize recommending meals that use overstocked or near-expiry ingredients, thereby reducing food waste and optimizing ingredient utilization efficiency. Simultaneously, GreenBite will provide a data analysis dashboard, enabling cafeteria managers to view meal popularity, inventory usage, and waste risks, and to optimize procurement strategies based on data. In addition, the system will provide health tags, such as low-calorie or high-protein labels, to help employees select healthy meals more easily and encourage them to use the corporate cafeteria more frequently.
 
-This is a good fit because food businesses directly deal with nutrition, ingredient stock, packaging, and waste, so software can clearly improve their sustainability performance.
+## 4. Technical Implementation
+GreenBite will be implemented using React, Spring Boot, MyBatis, PostgreSQL, and Docker as its core technology stack. React is chosen for the frontend because its component-based development approach is suitable for building highly interactive Web interfaces, effectively supporting dynamic menu displays, personalized recommendation lists, user preference setting pages, and manager data dashboards. Additionally, React offers high development efficiency and good maintainability, making it easier for the team to expand and optimize interface functions later on.
 
-### 4. Aim of the Project
-The aim of GreenBite is to help a food business become more sustainable through software by:
+For the backend, Spring Boot is selected because it is ideal for building RESTful Web services with clear structures and strong scalability. GreenBite needs to handle various business functions such as user requests, recommendation logic, inventory management, permission control, and data analysis. Spring Boot provides a mature development framework and rich ecosystem support, helping the team complete backend system development more efficiently while ensuring system stability and maintainability. Given the different roles in this project, such as regular employees, cafeteria staff, and administrators, Spring Boot also facilitates layered design and permission control implementation.
 
-- recommending healthier meals to users,
-- promoting lower-carbon menu options,
-- prioritising meals that use ingredients with high stock or near-expiry dates,
-- generating clear sustainability-related reports for managers.
+In the data access layer, the system will use MyBatis to implement interaction between the backend and the database. MyBatis is chosen because this project involves many business-critical database operations, such as meal queries, inventory updates, recommendation record management, and statistical analysis. Compared to relying entirely on auto-generated queries, MyBatis allows developers to control SQL statements more clearly, facilitating the implementation of complex query logic while improving the readability and maintainability of the data access layer. Thus, it is more suitable for this project's scenario with clear data structures and high query demands.
 
-This makes the platform both customer-facing and business-facing, which gives it stronger practical value than a simple recommendation site.
+Regarding the database, GreenBite uses PostgreSQL to store user information, dietary preferences, meal data, inventory data, and statistical data. PostgreSQL is chosen because, as a mature relational database, it offers excellent stability and strong support for data consistency, capable of handling requirements like multi-table joins, statistical analysis, and structured data storage in this project. Furthermore, PostgreSQL's good support for complex queries makes it suitable for future meal recommendation analysis and operational data report generation.
 
-### 5. Main Features
+In terms of system architecture, GreenBite adopts a frontend-backend separation model. The frontend React application accesses RESTful APIs provided by Spring Boot via HTTP requests, while the backend executes business logic and interacts with PostgreSQL through MyBatis. This architecture is chosen because it improves system modularity, allowing frontend development, backend development, and database design to proceed in parallel, thereby enhancing team collaboration efficiency and facilitating subsequent testing, maintenance, and functional expansion.
 
-#### 5.1 Customer Features
-Customers can:
+Additionally, to improve deployment consistency and portability, Docker will be introduced. Docker is selected because it can encapsulate the frontend, backend, and database environments into containers, reducing differences between various development environments and avoiding "it works on my machine" issues. For a course project, Docker also helps the team complete deployment, testing, and demonstration more conveniently in the university-provided virtual machine environment, improving project delivery efficiency.
 
-- create or log into an account,
-- enter dietary preferences and goals, such as vegetarian, low calorie, high protein, or allergy restrictions,
-- receive recommended meals,
-- view nutrition information,
-- view a simple sustainability score for each meal,
-- place or simulate an order.
+## 5. Sustainability Contribution and SDG Alignment
+GreenBite enhances sustainability from two aspects: reducing food waste and promoting employee health. The system reduces ingredient waste through inventory-aware recommendations and optimizes procurement strategies via data analysis, thereby improving resource utilization efficiency. Concurrently, GreenBite encourages employees to choose healthier meals through health tags and personalized recommendations, reducing reliance on food delivery and lowering single-use packaging waste.
 
-#### 5.2 Staff Features
-Staff can:
+The GreenBite project is highly aligned with the United Nations Sustainable Development Goals SDG 3 (Good Health and Well-being) and SDG 12 (Responsible Consumption and Production). The system improves the dietary structure of employees through healthy meal recommendations, while simultaneously reducing food waste through inventory optimization, thereby enhancing the sustainable operational capacity of corporate cafeterias.
 
-- add and edit meals,
-- manage ingredients and stock levels,
-- mark ingredients as "high stock" or "near expiry,"
-- monitor which meals are being recommended most often,
-- update sustainability tags such as low-carbon or plant-based.
+## 6. Ethical Issues and Social Impact
+During the design process, GreenBite will heavily consider data privacy and algorithmic bias issues. The system will adhere to the principle of data minimization, collecting only the data necessary for the recommendation function, and will employ encrypted storage and role-based access control to protect user privacy. Meanwhile, the recommendation system will remain transparent and allow administrators to adjust recommendation weights to avoid algorithmic bias and encourage healthy dietary choices.
 
-#### 5.3 Manager/Admin Features
-Managers can:
+GreenBite will also generate a positive social impact. The system can help employees form healthy dietary habits and improve corporate cafeteria operational efficiency, while reducing ingredient waste and single-use packaging waste. Additionally, implementing the GreenBite system can enhance the image of corporate social responsibility and promote sustainable enterprise development.
 
-- view dashboards showing meal popularity, ingredient usage, and waste risk,
-- monitor how often lower-carbon meals are selected,
-- track how much stock is saved through recommendation logic,
-- generate simple sustainability summary reports.
+## 7. Expected Outcome
+Upon project completion, HachimiSoft will provide the ByteDance cafeteria with a complete GreenBite platform, supporting personalized meal recommendations, inventory management, and data analysis functions. The system will be accessible via browsers, enabling employees to conveniently view meals and receive recommendations, while supporting managers in optimizing procurement strategies.
 
-This multi-role design is suitable for testing because it allows the system to demonstrate both customer-facing and business-facing value.
-
-### 6. Sustainability Contribution
-The sustainability contribution of the project comes from three aspects.
-
-First, the system reduces food waste by recommending meals that use ingredients with high stock levels or ingredients that are close to expiry.
-
-Second, it encourages environmentally friendlier choices by showing low-carbon and plant-based options more clearly.
-
-Third, it helps business owners understand their own operations through dashboards and reports, which is important because the client is described as being very new to sustainability.
-
-So the platform does not only help people eat better; it also helps the business reduce waste, improve resource use, and make more informed decisions.
-
-### 7. Innovation
-The creative aspect of this project is that it combines three things in one platform:
-
-- health-focused recommendation,
-- sustainability-focused recommendation,
-- inventory-aware business support.
-
-A normal meal recommendation website would only recommend food based on calories or preferences. GreenBite goes further by including sustainability scoring and ingredient waste reduction in the recommendation logic. This makes it more innovative and more aligned with the project brief's emphasis on creativity and business sustainability.
-
-### 8. Proposed Recommendation Logic
-There is no need to build a very complex AI model for this course project. A practical scoring system is enough.
-
-For example, each meal can be scored using:
-
-**Recommendation Score = Health Match + Preference Match + Sustainability Score + Stock Priority**
-
-Where:
-
-- **Health Match** considers calorie level, protein level, and similar nutrition indicators.
-- **Preference Match** considers vegetarian options, allergy restrictions, disliked ingredients, and user goals.
-- **Sustainability Score** reflects carbon level, plant-based ingredients, local ingredients, or eco-friendly packaging.
-- **Stock Priority** gives extra weight to meals that help use ingredients with high stock or near-expiry dates.
-
-This approach is realistic, explainable, and easy to demonstrate during assessment.
-
-### 9. Technical Implementation
-The project can be implemented using familiar technologies rather than spending too much time learning a completely new framework.
-
-A reasonable stack could be:
-
-- **Frontend:** HTML, CSS, JavaScript, or a framework already known by the team
-- **Backend:** Java, Python, or Node.js depending on team skills
-- **Database:** MySQL, SQLite, or PostgreSQL
-- **Hosting:** University-provided VM
-- **Remote testing:** accessible through a browser with prepared test accounts
-
-This also allows the team to demonstrate skills from databases, networks, distributed systems, and web development.
-
-### 10. Possible Data Model
-A simple database design could include:
-
-- **Users**
-- **Meals**
-- **Ingredients**
-- **Meal_Ingredients**
-- **Orders**
-- **Dietary_Preferences**
-- **Sustainability_Tags**
-- **Stock_Records**
-- **Reports**
-
-This gives the project enough structure to show clear database design and system logic.
-
-### 11. Remote Testing Plan
-To support remote testing, GreenBite will:
-
-- be deployed on the provided VM,
-- be accessible through a browser,
-- include pre-created accounts,
-- provide at least one customer account and one staff or admin account.
-
-Example test accounts:
-
-- Customer: `customer1 / 123456`
-- Staff: `staff1 / 123456`
-- Admin: `admin1 / 123456`
-
-This makes the system easy for lecturers or testers to access without needing to register manually.
-
-### 12. Why This Project Fits the Assignment
-This project fits the assignment well because:
-
-- it directly helps a business become more sustainable, not just healthier;
-- it is creative and practical, combining diet recommendation with food waste reduction;
-- it can demonstrate technical skills from several modules;
-- it is straightforward to deploy and test remotely.
-
-### 13. Expected Outcome
-At the end of the project, the team expects to deliver a working web platform that allows customers to receive healthy and sustainable meal recommendations, while giving staff and managers useful tools for reducing food waste and improving sustainability performance.
-
-The final product should demonstrate that software can help small businesses become more sustainable in a practical, measurable, and user-friendly way.
+GreenBite is expected to reduce ingredient waste and increase cafeteria utilization rates, while simultaneously improving employee health conditions and reducing reliance on food delivery. Through a data-driven approach, GreenBite will help the ByteDance cafeteria achieve a more efficient and sustainable operational model and possesses the potential to be expanded to other corporate cafeterias or university cafeterias.

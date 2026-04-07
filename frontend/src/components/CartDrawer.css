@@ -34,6 +34,11 @@
   box-sizing: border-box;
 }
 
+.cart-click-area {
+  position: absolute;
+  inset: 0;
+}
+
 .cart-overlay.open .cart-drawer {
   right: 0; /* 展开时滑入屏幕 */
 }
@@ -200,4 +205,18 @@
   margin-top: 5px;
   font-weight: bold;
   color: #1b4332;
+}
+
+.item-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #52796f;
+}
+
+.cart-error {
+  color: #b91c1c;
+  font-size: 13px;
+  margin-bottom: 12px;
 }

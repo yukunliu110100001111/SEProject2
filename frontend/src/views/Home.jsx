@@ -1,106 +1,171 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
-import MealCard from '../components/MealCard';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import CartDrawer from '../components/CartDrawer';
-import { mockMeals } from '../utils/mockData';
+import MealCard from '../components/MealCard';
+import Navbar from '../components/Navbar';
 import './Home.css';
 
-const Home = ({ onLogout }) => {
-  const username = localStorage.getItem('greenbite_username') || '健康食客';
-
-  // 状态管理
-  const [cart, setCart] = useState([]);
+const Home = ({
+  auth,
+  cart,
+  cartCount,
+  onLogout,
+  onAddToCart,
+  onUpdateCartQuantity,
+  onClearCart,
+}) => {
+  const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [displayMeals, setDisplayMeals] = useState([]);
+  const [search, setSearch] = useState('');
+  const [meals, setMeals] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // 加载初始菜品数据 [对接 API 4.1]
   useEffect(() => {
-    // 优先读取模拟数据库，若无则使用 mockData
-    const savedMeals = JSON.parse(localStorage.getItem('greenbite_meals')) || mockMeals;
-    setDisplayMeals(savedMeals);
-  }, []);
+    let active = true;
 
-  // 购物车核心逻辑：更新数量或添加新菜品
-  const handleUpdateQuantity = (mealId, delta) => {
-    setCart(prevCart => {
-      return prevCart.map(item => {
-        if (item.mealId === mealId) {
-          const newQty = item.quantity + delta;
-          return newQty > 0 ? { ...item, quantity: newQty } : null;
-        }
-        return item;
-      }).filter(Boolean); // 过滤掉数量为 0 的项
-    });
-  };
+    const loadData = async () => {
+      setLoading(true);
+      setError('');
 
-  const addToCart = (meal) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.mealId === meal.mealId);
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.mealId === meal.mealId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+      try {
+        const [mealList, recommendationList] = await Promise.all([
+          getMeals(),
+          getRecommendations(auth.userId),
+        ]);
+
+        const detailList = await Promise.all(
+          mealList.map(async (meal) => {
+            try {
+              return await getMealDetail(meal.mealId);
+            } catch {
+              return meal;
+            }
+          })
         );
-      }
-      return [...prevCart, { ...meal, quantity: 1 }];
-    });
-    // 增加一个微小的震动反馈或提示（可选）
-    console.log(`已将 ${meal.name} 加入餐盒`);
-  };
 
-  // 计算购物车总数显示在 Navbar 徽标上
-  const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+        if (!active) {
+          return;
+        }
+
+        setMeals(detailList);
+        setRecommendations(recommendationList);
+      } catch (err) {
+        if (active) {
+          setError(err.message || '推荐加载失败');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, [auth.userId]);
+
+  const recommendationMap = useMemo(() => {
+    const map = new Map();
+    recommendations.forEach((item) => {
+      map.set(item.mealId, item);
+    });
+    return map;
+  }, [recommendations]);
+
+  const filteredMeals = useMemo(() => {
+    return meals
+      .filter((meal) => {
+        const keyword = search.trim().toLowerCase();
+        if (!keyword) {
+          return true;
+        }
+        return (
+          meal.name?.toLowerCase().includes(keyword) ||
+          meal.description?.toLowerCase().includes(keyword) ||
+          meal.tags?.some((tag) => tag.toLowerCase().includes(keyword))
+        );
+      })
+      .sort((a, b) => {
+        const left = Number(recommendationMap.get(a.mealId)?.score || 0);
+        const right = Number(recommendationMap.get(b.mealId)?.score || 0);
+        return right - left;
+      });
+  }, [meals, recommendationMap, search]);
 
   return (
     <div className="home-container">
-      {/* 动态光晕背景动画 */}
       <div className="bg-blob blob-1"></div>
       <div className="bg-blob blob-2"></div>
       <div className="bg-blob blob-3"></div>
 
       <Navbar
-        cartCount={totalItemsCount}
+        auth={auth}
+        cartCount={cartCount}
         onOpenCart={() => setIsCartOpen(true)}
         onLogout={onLogout}
       />
 
       <section className="hero-section">
         <div className="welcome-bar">
-          <div className="user-welcome">Hi, <span>{username}</span> 👋</div>
+          <div className="user-welcome">
+            Hi, <span>{auth.username}</span>
+          </div>
           <div className="search-wrapper">
-            <input type="text" placeholder="搜索低碳美味..." />
+            <input
+              type="text"
+              placeholder="搜索菜品、标签或描述"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
         <div className="hero-title-area">
-          <h1 className="hero-main-title">让美味，对<span>地球</span>更好一点</h1>
-          <p className="hero-sub-title">每一口选择，都是在为你想生活的世界投票。基于 AI 的智能营养匹配，开启你的绿洲生活。</p>
+          <h1 className="hero-main-title">
+            推荐分会随着<span>偏好和库存</span>实时变化
+          </h1>
+          <p className="hero-sub-title">
+            当前页面同时展示推荐理由、营养信息和环保分，满足 MVP 对推荐浏览与下单的要求。
+          </p>
         </div>
       </section>
 
       <section className="list-section">
         <div className="list-header">
-          <h2 className="list-title">今日低碳推荐 <span>/ Optimized for you</span></h2>
+          <h2 className="list-title">
+            推荐列表 <span>/ from GET /recommendations</span>
+          </h2>
         </div>
 
-        <div className="meal-grid">
-          {displayMeals.map(meal => (
-            <MealCard
-              key={meal.mealId}
-              meal={meal}
-              onAdd={() => addToCart(meal)}
-            />
-          ))}
-        </div>
+        {loading && <div className="page-card">正在加载推荐...</div>}
+        {error && <div className="page-card error-card">{error}</div>}
+
+        {!loading && !error && (
+          <div className="meal-grid">
+            {filteredMeals.map((meal) => (
+              <MealCard
+                key={meal.mealId}
+                meal={meal}
+                recommendation={recommendationMap.get(meal.mealId)}
+                onAdd={() => onAddToCart(meal)}
+                onClick={() => navigate(`/meals/${meal.mealId}`)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* 购物车抽屉：严格对接 POST /orders 的数据流 [cite: 99-109] */}
       <CartDrawer
+        auth={auth}
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cart={cart}
-        onUpdateQuantity={handleUpdateQuantity}
-        onClearCart={() => setCart([])}
+        onUpdateQuantity={onUpdateCartQuantity}
+        onClearCart={onClearCart}
       />
     </div>
   );

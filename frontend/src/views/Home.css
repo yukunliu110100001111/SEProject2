@@ -139,9 +139,20 @@
 
 .meal-grid {
   display: grid;
-  /* 拼写修正：grid-template-columns */
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 35px;
+}
+
+.page-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(45, 106, 79, 0.08);
+  padding: 24px;
+  border-radius: 20px;
+  color: #2d6a4f;
+}
+
+.error-card {
+  color: #b91c1c;
 }
 
 @media (max-width: 768px) {

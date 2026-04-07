@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../api/app';
+import { login, register } from '../api/app';
 import { saveSession } from '../utils/storage';
 import './Login.css';
 
-const Login = ({ onLoginSuccess }) => {
+const Register = ({ onRegisterSuccess }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: 'customer1',
-    password: '123456',
+    username: '',
+    password: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const handleChange = (key, value) => {
-    setForm((current) => ({ ...current, [key]: value }));
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -23,12 +19,13 @@ const Login = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      const data = await login(form);
-      saveSession(data);
-      onLoginSuccess?.();
-      navigate(data.role === 'admin' ? '/dashboard' : data.role === 'staff' ? '/staff' : '/home');
+      await register(form);
+      const session = await login(form);
+      saveSession(session);
+      onRegisterSuccess?.();
+      navigate('/home');
     } catch (err) {
-      setError(err.message || '登录失败');
+      setError(err.message || '注册失败');
     } finally {
       setLoading(false);
     }
@@ -37,11 +34,10 @@ const Login = ({ onLoginSuccess }) => {
   return (
     <div className="login-container">
       <div className="login-blob"></div>
-
       <div className="login-card">
-        <div className="brand-logo">🍃</div>
-        <h2>GreenBite</h2>
-        <p>登录后开始完整 MVP 流程演示</p>
+        <div className="brand-logo">🪴</div>
+        <h2>注册账号</h2>
+        <p>注册后会自动登录并进入推荐页</p>
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">
@@ -49,7 +45,7 @@ const Login = ({ onLoginSuccess }) => {
               type="text"
               placeholder="用户名"
               value={form.username}
-              onChange={(e) => handleChange('username', e.target.value)}
+              onChange={(e) => setForm((current) => ({ ...current, username: e.target.value }))}
               required
             />
           </div>
@@ -58,21 +54,19 @@ const Login = ({ onLoginSuccess }) => {
               type="password"
               placeholder="密码"
               value={form.password}
-              onChange={(e) => handleChange('password', e.target.value)}
+              onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
               required
             />
           </div>
           {error && <p className="login-error">{error}</p>}
           <button type="submit" disabled={loading}>
-            {loading ? '登录中...' : '登录'}
+            {loading ? '注册中...' : '完成注册'}
           </button>
         </form>
 
         <div className="login-footer">
-          <span>测试账号: customer1 / staff1 / admin1</span>
-          <span>默认密码: 123456</span>
-          <Link to="/register" className="register-link">
-            没有账号？去注册
+          <Link to="/login" className="register-link">
+            已有账号？返回登录
           </Link>
         </div>
       </div>
@@ -80,4 +74,4 @@ const Login = ({ onLoginSuccess }) => {
   );
 };
 
-export default Login;
+export default Register;

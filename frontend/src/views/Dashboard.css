@@ -131,16 +131,6 @@
   color: #64748b;
 }
 
-.rank-trend {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 8px;
-}
-
-.rank-trend.up { background: #ecfdf5; color: #10b981; }
-.rank-trend.down { background: #fef2f2; color: #ef4444; }
-
 /* 7. 库存监控样式 [对应 API 8.1 stockUsage 与 9.1 状态] */
 .stock-item {
   margin-bottom: 22px;
@@ -157,7 +147,9 @@
 .stock-name { color: #475569; }
 
 /* 状态文字颜色 */
+.stock-qty.near_expiry,
 .stock-qty.critical { color: #ef4444; }
+.stock-qty.high_stock,
 .stock-qty.low { color: #f59e0b; }
 .stock-qty.normal { color: #10b981; }
 
@@ -175,7 +167,9 @@
 }
 
 /* 进度条颜色映射 [对应 API 147-149] */
+.stock-progress-fill.near_expiry,
 .stock-progress-fill.critical { background: #ef4444; }
+.stock-progress-fill.high_stock,
 .stock-progress-fill.low { background: #f59e0b; }
 .stock-progress-fill.normal { background: #10b981; }
 
@@ -209,4 +203,39 @@
   .dashboard-header h1 { font-size: 26px; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .admin-card { padding: 20px; }
+}
+
+.dashboard-message {
+  max-width: 1100px;
+  margin: 0 auto 20px;
+  padding: 14px 18px;
+  border-radius: 14px;
+}
+
+.error-message {
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.report-panel {
+  max-width: 1100px;
+  margin: 30px auto 0;
+  padding: 0 20px;
+}
+
+.report-btn {
+  border: none;
+  background: #1b4332;
+  color: #fff;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 700;
+}
+
+.report-card {
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 }
