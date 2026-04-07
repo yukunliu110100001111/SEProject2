@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getMealDetail, getRecommendations } from '../api/app';
+import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import Navbar from '../components/Navbar';
 import './MealDetail.css';
 
@@ -19,14 +19,22 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
 
     const loadData = async () => {
       try {
-        const [mealData, recommendationList] = await Promise.all([
+        const [mealData, mealList, recommendationList] = await Promise.all([
           getMealDetail(mealId),
+          getMeals(),
           getRecommendations(auth.userId),
         ]);
         if (!active) {
           return;
         }
-        setMeal(mealData);
+        const mealSummary =
+          mealList.find((item) => String(item.mealId) === String(mealId)) || {};
+        setMeal({
+          ...mealSummary,
+          ...mealData,
+          sustainabilityScore:
+            mealData.sustainabilityScore ?? mealSummary.sustainabilityScore,
+        });
         setRecommendation(recommendationList.find((item) => String(item.mealId) === String(mealId)) || null);
       } catch (err) {
         if (active) {
@@ -61,6 +69,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
               <div className="detail-stats">
                 <span>🔥 {meal.calories} kcal</span>
                 <span>💪 {meal.protein}g</span>
+                <span>🌍 环保分 {meal.sustainabilityScore ?? '-'}/10</span>
                 {recommendation && <span>⭐ 推荐分 {recommendation.score}</span>}
               </div>
               {recommendation && <p className="detail-reason">推荐理由：{recommendation.reason}</p>}

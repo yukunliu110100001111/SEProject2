@@ -39,7 +39,13 @@ const Home = ({
         const detailList = await Promise.all(
           mealList.map(async (meal) => {
             try {
-              return await getMealDetail(meal.mealId);
+              const detail = await getMealDetail(meal.mealId);
+              return {
+                ...meal,
+                ...detail,
+                sustainabilityScore:
+                  detail.sustainabilityScore ?? meal.sustainabilityScore,
+              };
             } catch {
               return meal;
             }
