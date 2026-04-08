@@ -7,6 +7,15 @@ import Navbar from '../components/Navbar';
 import { getMealImageMap } from '../utils/storage';
 import './Home.css';
 
+const categories = [
+  '全部',
+  '低碳优先',
+  '高蛋白',
+  '植物基',
+  '轻食',
+  '库存优先',
+];
+
 const Home = ({
   auth,
   cart,
@@ -123,18 +132,85 @@ const Home = ({
         onLogout={onLogout}
       />
 
+      <section className="banner-intro">
+        <div className="hero-width-shell">
+          <div className="hero-stack-shell">
+            <div className="banner-panel">
+              <div className="banner-glow banner-glow-left"></div>
+              <div className="banner-glow banner-glow-right"></div>
+            <div className="banner-category-row" aria-label="菜品分类">
+              {categories.map((category, index) => (
+                <button
+                  key={category}
+                  type="button"
+                  className={`category-pill ${index === 0 ? 'active' : ''}`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            <div className="banner-search-wrapper">
+              <input
+                type="text"
+                placeholder="搜索菜品、标签或描述"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="banner-copy">
+              <span className="banner-kicker">GreenBite Curated Menu</span>
+              <h1>探索更健康、更低碳的餐食灵感</h1>
+                <p>
+                  从库存感知推荐到可持续评分，把已有菜品以更有氛围的方式先展示出来，再进入个性化推荐。
+                </p>
+                <div className="banner-actions">
+                  <button type="button" className="banner-btn primary" onClick={() => window.scrollTo({ top: 720, behavior: 'smooth' })}>
+                    查看推荐
+                  </button>
+                  <button type="button" className="banner-btn secondary" onClick={() => setIsCartOpen(true)}>
+                    打开餐车
+                  </button>
+                </div>
+              </div>
+            </div>
+            {!loading && !error && filteredMeals.length > 0 && (
+              <section className="top-showcase-section" aria-label="菜品展示带">
+                <div className="showcase-track-shell">
+                  <div className="showcase-marquee">
+                    {[0, 1].map((groupIndex) => (
+                      <div className="showcase-track" key={groupIndex}>
+                        {filteredMeals.map((meal) => (
+                          <button
+                            key={`${groupIndex}-${meal.mealId}`}
+                            type="button"
+                            className="showcase-card"
+                            onClick={() => navigate(`/meals/${meal.mealId}`)}
+                          >
+                            <img
+                              src={meal.imageUrl || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=500'}
+                              alt={meal.name}
+                              className="showcase-image"
+                            />
+                            <div className="showcase-overlay">
+                              <strong>{meal.name}</strong>
+                              <span>环保分 {meal.sustainabilityScore ?? '-'}/10</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section className="hero-section">
         <div className="welcome-bar">
           <div className="user-welcome">
             Hi, <span>{auth.username}</span>
-          </div>
-          <div className="search-wrapper">
-            <input
-              type="text"
-              placeholder="搜索菜品、标签或描述"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
           </div>
         </div>
         <div className="hero-title-area">
