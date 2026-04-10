@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
+import Assistant from './views/Assistant';
 import Dashboard from './views/Dashboard';
 import Home from './views/Home';
 import Login from './views/Login';
@@ -107,6 +108,12 @@ function App() {
             ) : (
               <Register onRegisterSuccess={handleLogin} />
             )
+          }
+        />
+        <Route
+          path="/assistant"
+          element={
+            isAuthenticated ? <Assistant {...sharedProps} /> : <Navigate to="/login" replace />
           }
         />
         <Route

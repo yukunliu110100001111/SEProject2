@@ -23,6 +23,11 @@ const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
           </Link>
         </li>
         <li>
+          <Link to="/assistant" className={isActive('/assistant')}>
+            AI 助手
+          </Link>
+        </li>
+        <li>
           <Link to="/orders" className={isActive('/orders')}>
             我的订单
           </Link>

@@ -123,3 +123,91 @@ export const getSustainabilityReport = () =>
     url: '/reports/sustainability',
     method: 'get',
   });
+
+export const chatWithAssistant = (messages) =>
+  request({
+    url: '/ai/chat',
+    method: 'post',
+    data: { messages },
+  });
+
+export const confirmAssistantAction = (actionId) =>
+  request({
+    url: `/ai/actions/${actionId}/confirm`,
+    method: 'post',
+  });
+
+export const streamAssistantChat = async (messages, handlers = {}) => {
+  const token = localStorage.getItem('greenbite_token');
+  const response = await fetch('/api/ai/chat/stream', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ messages }),
+  });
+
+  if (!response.ok || !response.body) {
+    const text = await response.text();
+    if (response.status === 401) {
+      localStorage.removeItem('greenbite_token');
+      localStorage.removeItem('greenbite_role');
+      localStorage.removeItem('greenbite_userId');
+      localStorage.removeItem('greenbite_username');
+      window.location.href = '/login';
+      throw new Error('登录状态已失效，请重新登录');
+    }
+    throw new Error(text || 'AI 助手流式请求失败');
+  }
+
+  const decoder = new TextDecoder();
+  const reader = response.body.getReader();
+  let buffer = '';
+
+  const emitEvent = (rawEvent) => {
+    const lines = rawEvent.split('\n');
+    let eventName = 'message';
+    const dataLines = [];
+
+    lines.forEach((line) => {
+      if (line.startsWith('event:')) {
+        eventName = line.slice(6).trim();
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trim());
+      }
+    });
+
+    const dataText = dataLines.join('\n');
+    let data = dataText;
+    if (dataText.startsWith('{') || dataText.startsWith('[')) {
+      try {
+        data = JSON.parse(dataText);
+      } catch {
+        data = dataText;
+      }
+    }
+
+    handlers.onEvent?.({ event: eventName, data });
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() ?? '';
+    parts.forEach((part) => {
+      if (part.trim()) {
+        emitEvent(part);
+      }
+    });
+  }
+
+  if (buffer.trim()) {
+    emitEvent(buffer);
+  }
+};

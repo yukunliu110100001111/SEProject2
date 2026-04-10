@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearSession } from '../utils/storage';
 
 // 创建 axios 实例
 const service = axios.create({
@@ -35,6 +36,10 @@ service.interceptors.response.use(
     }
   },
   (error) => {
+    if (error?.response?.status === 401) {
+      clearSession();
+      window.location.href = '/login';
+    }
     console.error('网络异常:', error);
     return Promise.reject(error);
   }
