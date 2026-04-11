@@ -31,3 +31,6 @@ replay_pid*
 # Maven build output
 target/
 backend/target/
+
+# MacOS trash
+.DS_Store
