@@ -338,7 +338,172 @@ Response.data:
 
 ---
 
-# 九、状态说明（重要）
+# 九、AI 助手模块
+
+## 9.1 同步聊天
+
+POST /ai/chat
+
+说明：
+- 需要登录
+- AI 会通过后端受限工具读取数据库，不直接暴露数据库连接
+- 当前支持查询用户资料、推荐列表、菜品详情、库存摘要、订单状态
+- 当用户请求写操作时，AI 不会直接执行，而是先返回待确认操作
+
+Request:
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "根据我的偏好推荐三道菜"
+    }
+  ]
+}
+
+Response.data:
+{
+  "reply": "基于你的偏好，当前更推荐 2 号餐食。",
+  "model": "doubao-seed-2-0-pro-260215",
+  "toolCalls": ["get_recommendations"],
+  "pendingAction": null
+}
+
+如需确认写操作，`pendingAction` 示例：
+{
+  "reply": "我准备把你的目标热量改为 1700、蛋白质改为 95，并开启素食偏好。确认后我再执行。",
+  "model": "doubao-seed-2-0-pro-260215",
+  "toolCalls": [],
+  "pendingAction": {
+    "actionId": "8d9d6d22-7c8d-4f9e-a1c1-1234567890ab",
+    "actionType": "update_preferences",
+    "summary": "我准备把你的目标热量改为 1700、蛋白质改为 95，并开启素食偏好。确认后我再执行。",
+    "arguments": {
+      "targetCalories": 1700,
+      "targetProtein": 95,
+      "isVegetarian": true,
+      "allergens": ["nut"]
+    }
+  }
+}
+
+---
+
+## 9.2 流式聊天
+
+POST /ai/chat/stream
+
+Headers:
+- Content-Type: application/json
+- Authorization: Bearer \<token>
+
+说明：
+- 返回 `text/event-stream`
+- 前端逐步接收 AI 状态、工具调用、文本增量和待确认操作
+
+Request:
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "查询我的订单状态，订单号是 1"
+    }
+  ]
+}
+
+SSE 事件类型：
+
+1. `status`
+data:
+{
+  "stage": "thinking",
+  "message": "正在分析你的请求"
+}
+
+2. `tool_call`
+data:
+{
+  "tool": "get_order_status"
+}
+
+3. `delta`
+data:
+{
+  "content": "订单"
+}
+
+4. `action_required`
+data:
+{
+  "actionId": "8d9d6d22-7c8d-4f9e-a1c1-1234567890ab",
+  "actionType": "create_order",
+  "summary": "我将为你创建订单，请确认。",
+  "arguments": {
+    "items": [
+      {
+        "mealId": 1,
+        "quantity": 1
+      }
+    ]
+  }
+}
+
+5. `done`
+data:
+{
+  "reply": "订单 1 当前状态为 pending。",
+  "model": "doubao-seed-2-0-pro-260215",
+  "toolCalls": ["get_order_status"],
+  "pendingAction": null
+}
+
+6. `error`
+data:
+{
+  "message": "AI 助手暂时不可用"
+}
+
+---
+
+## 9.3 确认执行待确认操作
+
+POST /ai/actions/{actionId}/confirm
+
+说明：
+- 需要登录
+- 只能确认当前登录用户自己发起的待确认操作
+- 当前支持的待确认操作：
+  - `update_preferences`
+  - `create_order`
+
+Response.data:
+{
+  "reply": "已按确认内容更新你的饮食偏好。",
+  "model": "local-action",
+  "toolCalls": ["update_preferences"],
+  "pendingAction": null
+}
+
+---
+
+## 9.4 AI 可用数据库工具
+
+当前 AI 侧可通过后端调用的受限工具如下：
+
+- `get_user_profile`
+- `get_recommendations`
+- `search_meals`
+- `get_meal_detail`
+- `get_inventory_summary`
+- `get_order_status`
+
+权限说明：
+- 普通用户默认只能查询自己的资料、推荐和订单
+- `get_inventory_summary` 仅 staff/admin 可用
+- 写操作必须走待确认流程，不允许模型直接写库
+
+---
+
+# 十、状态说明（重要）
 
 库存状态：
 
@@ -354,7 +519,7 @@ Response.data:
 
 ---
 
-# 十、错误码（建议）
+# 十一、错误码（建议）
 
 200 成功  
 400 参数错误  
@@ -366,7 +531,7 @@ Response.data:
 
 ---
 
-# 十一、鉴权与角色速查
+# 十二、鉴权与角色速查
 
 - 不需要登录：`/health`、`/auth/login`、`/auth/register`
 - 需要登录：其余所有接口
@@ -377,3 +542,6 @@ Response.data:
 - 仅本人或 staff/admin：`POST /orders`、`POST /orders/{id}/confirm`、`POST /orders/{id}/cancel`（基于订单所属用户）
 - 仅 staff/admin：`/meals` 的增改删、`POST /ingredients`、`PUT /ingredients/{id}`、`PUT /stock/{ingredientId}`
 - 仅 admin：`GET /dashboard`、`GET /reports/sustainability`
+- 需要登录：`POST /ai/chat`、`POST /ai/chat/stream`、`POST /ai/actions/{actionId}/confirm`
+- AI 查询库存摘要仅 staff/admin 可用
+- AI 写操作不会直接执行，必须先确认
