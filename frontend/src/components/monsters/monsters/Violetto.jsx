@@ -77,6 +77,23 @@ export function Violetto({ cursorX, cursorY, isFormFocused = false, isPasswordVi
       <Motion.g style={{ skewX: leanSkew, transformOrigin: 'bottom center' }}>
         <ellipse cx="217.5" cy="352" rx="72" ry="14" fill="rgba(15, 23, 42, 0.12)" />
         <path
+          d="M 218 -5
+             L 218 -40
+             L 249 -58"
+          fill="none"
+          stroke="#ef4444"
+          strokeWidth="14"
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M 156 -5
+             L 279 -5
+             L 312 15
+             L 123 15 Z"
+          fill="#111827"
+        />
+        <path
           d="M 128 20
              L 307 20
              L 268 360
@@ -93,6 +110,7 @@ export function Violetto({ cursorX, cursorY, isFormFocused = false, isPasswordVi
              L 167 360 Z"
           fill="#b89372"
         />
+        <rect x="123" y="15" width="189" height="10" fill="#111827" />
         <Motion.circle
           r={8}
           fill="white"

@@ -74,7 +74,17 @@ export function Inky({ cursorX, cursorY, isFormFocused = false, isPasswordVisibl
   return (
     <Motion.g initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
       <Motion.g style={{ skewX: leanSkew, transformOrigin: 'bottom center' }}>
-        <rect x={bodyX} y={bodyY} width={bodyWidth} height={bodyHeight} fill="#1d2025" rx={2} />
+        <rect x={bodyX} y={bodyY} width={bodyWidth} height={bodyHeight} fill="#4a2512" rx={8} />
+        {Array.from({ length: 4 }).map((_, row) => (
+          <g key={row}>
+            <rect x="260" y={132 + row * 54} width="34" height="40" rx="7" fill="#6b3518" />
+            <rect x="306" y={132 + row * 54} width="34" height="40" rx="7" fill="#6b3518" />
+          </g>
+        ))}
+        <path d="M 300 128 L 300 338" stroke="#2f160b" strokeWidth="5" strokeLinecap="round" opacity="0.75" />
+        <path d="M 256 181 L 344 181" stroke="#2f160b" strokeWidth="5" strokeLinecap="round" opacity="0.75" />
+        <path d="M 256 235 L 344 235" stroke="#2f160b" strokeWidth="5" strokeLinecap="round" opacity="0.75" />
+        <path d="M 256 289 L 344 289" stroke="#2f160b" strokeWidth="5" strokeLinecap="round" opacity="0.75" />
         <Motion.circle
           r={10}
           fill="white"
