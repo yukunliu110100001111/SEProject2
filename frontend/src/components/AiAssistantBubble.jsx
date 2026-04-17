@@ -9,8 +9,18 @@ const suggestedPrompts = [
   '搜索鸡肉',
 ];
 
+const ambientPrompts = [
+  '要不要看看今天最适合你的菜？',
+  '我可以直接帮你查订单。',
+  '点我，给你挑三道。',
+  '想吃点清爽的？',
+  '也可以直接搜鸡肉。',
+  '今天想吃高蛋白吗？',
+];
+
 const AiAssistantBubble = ({ auth }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [ambientText, setAmbientText] = useState('');
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -22,6 +32,8 @@ const AiAssistantBubble = ({ auth }) => {
   const [confirmingActionId, setConfirmingActionId] = useState('');
   const [error, setError] = useState('');
   const messagesRef = useRef(null);
+  const ambientTimerRef = useRef(null);
+  const ambientHideTimerRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -32,6 +44,41 @@ const AiAssistantBubble = ({ auth }) => {
       container.scrollTop = container.scrollHeight;
     }
   }, [isOpen, messages]);
+
+  useEffect(() => {
+    const clearAmbientTimers = () => {
+      if (ambientTimerRef.current) {
+        clearTimeout(ambientTimerRef.current);
+        ambientTimerRef.current = null;
+      }
+      if (ambientHideTimerRef.current) {
+        clearTimeout(ambientHideTimerRef.current);
+        ambientHideTimerRef.current = null;
+      }
+    };
+
+    if (isOpen) {
+      setAmbientText('');
+      clearAmbientTimers();
+      return clearAmbientTimers;
+    }
+
+    const scheduleAmbientPrompt = () => {
+      const nextDelay = 9000 + Math.floor(Math.random() * 9000);
+      ambientTimerRef.current = window.setTimeout(() => {
+        const nextText =
+          ambientPrompts[Math.floor(Math.random() * ambientPrompts.length)];
+        setAmbientText(nextText);
+        ambientHideTimerRef.current = window.setTimeout(() => {
+          setAmbientText('');
+          scheduleAmbientPrompt();
+        }, 3600);
+      }, nextDelay);
+    };
+
+    scheduleAmbientPrompt();
+    return clearAmbientTimers;
+  }, [isOpen]);
 
   const submitMessage = async (content) => {
     const nextContent = content.trim();
@@ -158,9 +205,15 @@ const AiAssistantBubble = ({ auth }) => {
       <button
         type="button"
         className={`ai-bubble-trigger ${isOpen ? 'hidden' : ''}`}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setAmbientText('');
+          setIsOpen(true);
+        }}
         aria-label="打开 AI 助手"
       >
+        <span className={`ai-bubble-ambient ${ambientText ? 'visible' : ''}`}>
+          {ambientText}
+        </span>
         <span className="ai-bubble-icon">AI</span>
         <span className="ai-bubble-copy">
           <strong>Assistant</strong>
