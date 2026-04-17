@@ -153,23 +153,20 @@ const Home = ({
             <div className="banner-search-wrapper">
               <input
                 type="text"
-                placeholder="搜索菜品、标签或描述"
+                placeholder="搜索"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <div className="banner-copy">
-              <span className="banner-kicker">GreenBite Curated Menu</span>
-              <h1>探索更健康、更低碳的餐食灵感</h1>
-                <p>
-                  从库存感知推荐到可持续评分，把已有菜品以更有氛围的方式先展示出来，再进入个性化推荐。
-                </p>
+              <span className="banner-kicker">GreenBite</span>
+              <h1>今日推荐</h1>
                 <div className="banner-actions">
                   <button type="button" className="banner-btn primary" onClick={() => window.scrollTo({ top: 720, behavior: 'smooth' })}>
-                    查看推荐
+                    浏览
                   </button>
                   <button type="button" className="banner-btn secondary" onClick={() => setIsCartOpen(true)}>
-                    打开餐车
+                    餐车
                   </button>
                 </div>
               </div>
@@ -216,19 +213,14 @@ const Home = ({
         </div>
         <div className="hero-title-area">
           <h1 className="hero-main-title">
-            推荐分会随着<span>偏好和库存</span>实时变化
+            为你推荐
           </h1>
-          <p className="hero-sub-title">
-            当前页面同时展示推荐理由、营养信息和环保分，满足 MVP 对推荐浏览与下单的要求。
-          </p>
         </div>
       </section>
 
       <section className="list-section">
         <div className="list-header">
-          <h2 className="list-title">
-            推荐列表 <span>/ from GET /recommendations</span>
-          </h2>
+          <h2 className="list-title">推荐</h2>
         </div>
 
         {loading && <div className="page-card">正在加载推荐...</div>}

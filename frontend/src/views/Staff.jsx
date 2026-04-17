@@ -241,7 +241,6 @@ const Staff = ({ auth, cartCount, onLogout }) => {
       <div className="staff-shell">
         <div className="staff-header">
           <h1>员工管理台</h1>
-          <p>覆盖菜品增改删、食材维护和库存更新。</p>
         </div>
 
         {message && <div className="staff-message staff-success">{message}</div>}
@@ -394,11 +393,6 @@ const Staff = ({ auth, cartCount, onLogout }) => {
               />
               <button type="submit">{ingredientForm.ingredientId ? '更新食材' : '新增食材'}</button>
             </form>
-
-            <div className="staff-tip">
-              当前后端没有食材列表接口，下面列表由菜品详情中的食材关系和本地缓存拼出来。
-            </div>
-
             <div className="staff-list">
               {ingredientList.map((ingredient) => (
                 <div key={ingredient.ingredientId} className="staff-list-item">

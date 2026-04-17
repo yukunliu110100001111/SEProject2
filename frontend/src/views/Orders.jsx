@@ -51,14 +51,13 @@ const Orders = ({ auth, cartCount, onLogout }) => {
 
       <div className="orders-header">
         <h1>我的订单</h1>
-        <p>当前订单列表来自前端缓存，并与确认/取消接口联动。</p>
       </div>
 
       {error && <div className="orders-message orders-error">{error}</div>}
 
       <div className="orders-list">
         {orders.length === 0 ? (
-          <div className="orders-message">暂无订单，先去推荐页下单。</div>
+          <div className="orders-message">暂无订单</div>
         ) : (
           orders.map((order) => (
             <div key={order.orderId} className="order-card">

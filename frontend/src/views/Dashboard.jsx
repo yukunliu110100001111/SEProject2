@@ -49,7 +49,6 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>正在同步实时运营数据...</p>
       </div>
     );
   }
@@ -60,7 +59,6 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
 
       <div className="dashboard-header">
         <h1>运营数据中心</h1>
-        <p>管理员可以查看指标并生成可持续报告。</p>
       </div>
 
       {error && <div className="dashboard-message error-message">{error}</div>}
@@ -77,7 +75,6 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
                   style={{ width: `${Math.round(Number(data.lowCarbonRate || 0) * 100)}%` }}
                 ></div>
               </div>
-              <p className="gauge-desc">由后台订单统计实时计算</p>
             </div>
           </div>
 
@@ -129,10 +126,10 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
         {reportError && <p className="dashboard-message error-message">{reportError}</p>}
         {report && (
           <div className="report-card">
-            <h3>报告摘要</h3>
-            <p>生成时间：{report.generatedAt}</p>
-            <p>摘要：{report.summary}</p>
-            <p>低碳选择率：{Math.round(Number(report.lowCarbonRate || 0) * 100)}%</p>
+            <h3>报告</h3>
+            <p>{report.generatedAt}</p>
+            <p>{report.summary}</p>
+            <p>{Math.round(Number(report.lowCarbonRate || 0) * 100)}%</p>
           </div>
         )}
       </div>

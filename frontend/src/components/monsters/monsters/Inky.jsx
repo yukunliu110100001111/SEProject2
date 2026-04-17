@@ -74,6 +74,7 @@ export function Inky({ cursorX, cursorY, isFormFocused = false, isPasswordVisibl
   return (
     <Motion.g initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
       <Motion.g style={{ skewX: leanSkew, transformOrigin: 'bottom center' }}>
+        <ellipse cx="300" cy="352" rx="66" ry="14" fill="rgba(15, 23, 42, 0.12)" />
         <rect x={bodyX} y={bodyY} width={bodyWidth} height={bodyHeight} fill="#4a2512" rx={8} />
         {Array.from({ length: 4 }).map((_, row) => (
           <g key={row}>

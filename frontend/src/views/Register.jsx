@@ -65,9 +65,13 @@ const Register = ({ onRegisterSuccess }) => {
         </div>
 
         <div className="login-card">
+          <div className="login-card-bubbles" aria-hidden="true">
+            <span className="login-card-bubble bubble-a">AI</span>
+            <span className="login-card-bubble bubble-b">Profile</span>
+            <span className="login-card-bubble bubble-c">Smart Picks</span>
+          </div>
           <div className="brand-logo">🪴</div>
           <h2>注册账号</h2>
-          <p>注册后会自动登录并进入推荐页</p>
 
           <form onSubmit={handleSubmit}>
             <div className="input-group">
@@ -110,7 +114,7 @@ const Register = ({ onRegisterSuccess }) => {
 
           <div className="login-footer">
             <Link to="/login" className="register-link">
-              已有账号？返回登录
+              登录
             </Link>
           </div>
         </div>

@@ -64,7 +64,7 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
         <div className="cart-items">
           {cart.length === 0 ? (
             <div className="empty-cart">
-              <p>购物车还是空的，先挑一份推荐餐食。</p>
+              <p>餐车为空</p>
             </div>
           ) : (
             cart.map((item) => (

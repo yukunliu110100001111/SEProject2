@@ -28,7 +28,7 @@ const MealCard = ({ meal, onAdd, onClick, recommendation }) => (
 
         {recommendation && (
           <div className="meal-reason">
-            <strong>推荐分 {recommendation.score}</strong>
+            <strong>{recommendation.score}</strong>
             <span>{recommendation.reason}</span>
           </div>
         )}
@@ -36,7 +36,7 @@ const MealCard = ({ meal, onAdd, onClick, recommendation }) => (
         <div className="meal-bottom">
           <div className="meal-nutrition">
             <span>🔥 {meal.calories} kcal</span>
-            <span>💪 {meal.protein}g 蛋白</span>
+            <span>💪 {meal.protein}g</span>
           </div>
         </div>
       </div>

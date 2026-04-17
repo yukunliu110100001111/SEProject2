@@ -68,9 +68,13 @@ const Login = ({ onLoginSuccess }) => {
         </div>
 
         <div className="login-card">
+          <div className="login-card-bubbles" aria-hidden="true">
+            <span className="login-card-bubble bubble-a">AI</span>
+            <span className="login-card-bubble bubble-b">Fresh</span>
+            <span className="login-card-bubble bubble-c">Low Carbon</span>
+          </div>
           <div className="brand-logo">🍃</div>
           <h2>GreenBite</h2>
-          <p>登录后开始完整 MVP 流程演示</p>
 
           <form onSubmit={handleSubmit}>
             <div className="input-group">
@@ -112,10 +116,8 @@ const Login = ({ onLoginSuccess }) => {
           </form>
 
           <div className="login-footer">
-            <span>测试账号: customer1 / staff1 / admin1</span>
-            <span>默认密码: 123456</span>
             <Link to="/register" className="register-link">
-              没有账号？去注册
+              注册
             </Link>
           </div>
         </div>

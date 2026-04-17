@@ -3,10 +3,10 @@ import { confirmAssistantAction, streamAssistantChat } from '../api/app';
 import './AiAssistantBubble.css';
 
 const suggestedPrompts = [
-  '根据我的偏好推荐三道菜',
-  '帮我解释为什么当前推荐第一名排在前面',
-  '查询我的订单状态，订单号是 1',
-  '搜索鸡肉相关菜品',
+  '推荐三道菜',
+  '解释第一名',
+  '查询订单 1',
+  '搜索鸡肉',
 ];
 
 const AiAssistantBubble = ({ auth }) => {
@@ -14,7 +14,7 @@ const AiAssistantBubble = ({ auth }) => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `我是 GreenBite AI 助手，当前登录用户是 ${auth?.username || '你'}。我可以帮你查询推荐、菜品详情和订单状态。`,
+      content: `你好，${auth?.username || '你'}`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -163,8 +163,7 @@ const AiAssistantBubble = ({ auth }) => {
       >
         <span className="ai-bubble-icon">AI</span>
         <span className="ai-bubble-copy">
-          <strong>智能助手</strong>
-          <small>点击对话</small>
+          <strong>Assistant</strong>
         </span>
       </button>
 
@@ -176,8 +175,8 @@ const AiAssistantBubble = ({ auth }) => {
           >
             <header className="ai-bubble-header">
               <div>
-                <span className="ai-bubble-kicker">GreenBite AI</span>
-                <h2>业务问答助手</h2>
+                <span className="ai-bubble-kicker">GreenBite</span>
+                <h2>Assistant</h2>
               </div>
               <button
                 type="button"
@@ -222,7 +221,6 @@ const AiAssistantBubble = ({ auth }) => {
                     <div className="ai-bubble-action-card">
                       <div>
                         <strong>{message.pendingAction.actionType}</strong>
-                        <span>确认后才会真正写入数据库</span>
                       </div>
                       <button
                         type="button"
@@ -256,11 +254,10 @@ const AiAssistantBubble = ({ auth }) => {
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="例如：解释我的推荐理由，或者查询订单 1 的状态"
+                placeholder="输入内容"
                 rows={3}
               />
               <div className="ai-bubble-form-actions">
-                <span>当前身份：{auth?.role || 'user'}</span>
                 <button type="submit" disabled={loading || !input.trim()}>
                   {loading ? '发送中...' : '发送'}
                 </button>

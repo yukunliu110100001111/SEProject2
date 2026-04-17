@@ -58,7 +58,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
 
       <div className="detail-shell">
         <button type="button" className="back-link" onClick={() => navigate('/home')}>
-          返回推荐页
+          返回
         </button>
 
         {error && <div className="detail-error">{error}</div>}
@@ -75,7 +75,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
                 <span>🌍 环保分 {meal.sustainabilityScore ?? '-'}/10</span>
                 {recommendation && <span>⭐ 推荐分 {recommendation.score}</span>}
               </div>
-              {recommendation && <p className="detail-reason">推荐理由：{recommendation.reason}</p>}
+              {recommendation && <p className="detail-reason">{recommendation.reason}</p>}
 
               <div className="detail-block">
                 <h2>食材列表</h2>

@@ -106,13 +106,12 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
 
       <div className="profile-header">
         <div className="profile-avatar">🥗</div>
-        <h1>{profile.username || auth.username} 的健康档案</h1>
-        <p className="profile-uid">账户 ID: GB-{String(auth.userId).padStart(4, '0')}</p>
+        <h1>{profile.username || auth.username}</h1>
       </div>
 
       <div className="profile-content">
         <div className="profile-section stats-section">
-          <h2>累计营养足迹</h2>
+          <h2>概览</h2>
           <div className="stats-mini-grid">
             <div className="mini-card">
               <div className="mini-info">
@@ -142,11 +141,10 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
               <div className="mini-icon">📦</div>
             </div>
           </div>
-          <p className="stats-footer">订单历史来自前端缓存，后端当前未提供查询接口。</p>
         </div>
 
         <div className="profile-section settings-section">
-          <h2>目标与偏好设定</h2>
+          <h2>偏好</h2>
           {loading ? (
             <div className="message-box">正在加载资料...</div>
           ) : (
@@ -192,7 +190,7 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
                 <label>过敏原限制</label>
                 <input
                   type="text"
-                  placeholder="例如: nut, fish, soy"
+                  placeholder="nut, fish, soy"
                   value={profile.allergensInput}
                   onChange={(e) => handleChange('allergensInput', e.target.value)}
                 />
