@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMealDetail, getMeals, getRecommendations } from '../api/app';
+import AiAssistantBubble from '../components/AiAssistantBubble';
 import CartDrawer from '../components/CartDrawer';
 import MealCard from '../components/MealCard';
 import Navbar from '../components/Navbar';
@@ -256,6 +257,7 @@ const Home = ({
         onUpdateQuantity={onUpdateCartQuantity}
         onClearCart={onClearCart}
       />
+      <AiAssistantBubble auth={auth} />
     </div>
   );
 };
