@@ -53,6 +53,9 @@ const Register = ({ onRegisterSuccess }) => {
 
   return (
     <div className="login-container">
+      <div className="login-background-brand" aria-hidden="true">
+        GreenBite
+      </div>
       <div className="login-blob"></div>
       <div className="login-shell">
         <div className="monster-panel">
