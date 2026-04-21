@@ -103,7 +103,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
   };
 
   useEffect(() => {
-    refreshData().catch((err) => setError(err.message || '员工数据加载失败'));
+    refreshData().catch((err) => setError(err.message || 'Failed to load staff data.'));
   }, []);
 
   const handleMealImageChange = (file) => {
@@ -113,7 +113,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
     }
 
     if (!file.type.startsWith('image/')) {
-      setError('请选择图片文件');
+      setError('Please choose an image file.');
       return;
     }
 
@@ -146,16 +146,16 @@ const Staff = ({ auth, cartCount, onLogout }) => {
       if (mealForm.mealId) {
         await updateMeal(mealForm.mealId, payload);
         saveMealImage(mealForm.mealId, mealForm.imageUrl.trim());
-        setMessage(`菜品 #${mealForm.mealId} 已更新`);
+        setMessage(`Meal #${mealForm.mealId} updated.`);
       } else {
         const created = await createMeal(payload);
         saveMealImage(created.mealId, mealForm.imageUrl.trim());
-        setMessage('新菜品已创建');
+        setMessage('Meal created.');
       }
       setMealForm(emptyMealForm);
       await refreshData();
     } catch (err) {
-      setError(err.message || '菜品保存失败');
+      setError(err.message || 'Failed to save meal.');
     }
   };
 
@@ -181,10 +181,10 @@ const Staff = ({ auth, cartCount, onLogout }) => {
     try {
       await deleteMeal(mealId);
       removeMealImage(mealId);
-      setMessage(`菜品 #${mealId} 已删除`);
+      setMessage(`Meal #${mealId} deleted.`);
       await refreshData();
     } catch (err) {
-      setError(err.message || '删除失败');
+      setError(err.message || 'Delete failed.');
     }
   };
 
@@ -205,7 +205,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
           currentQty_g: Number(ingredientForm.currentQty_g),
           expiryDate: ingredientForm.expiryDate,
         });
-        setMessage(`食材 #${ingredientForm.ingredientId} 已更新`);
+        setMessage(`Ingredient #${ingredientForm.ingredientId} updated.`);
       } else {
         const created = await createIngredient({
           name: ingredientForm.name,
@@ -224,13 +224,13 @@ const Staff = ({ auth, cartCount, onLogout }) => {
           },
         ];
         saveStaffIngredientCache(nextCache);
-        setMessage(`新食材 #${created.ingredientId} 已创建`);
+        setMessage(`Ingredient #${created.ingredientId} created.`);
       }
 
       setIngredientForm(emptyIngredientForm);
       await refreshData();
     } catch (err) {
-      setError(err.message || '食材保存失败');
+      setError(err.message || 'Failed to save ingredient.');
     }
   };
 
@@ -240,7 +240,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
 
       <div className="staff-shell">
         <div className="staff-header">
-          <h1>员工管理台</h1>
+          <h1>Staff console</h1>
         </div>
 
         {message && <div className="staff-message staff-success">{message}</div>}
@@ -248,38 +248,38 @@ const Staff = ({ auth, cartCount, onLogout }) => {
 
         <div className="staff-grid">
           <section className="staff-card">
-            <h2>菜品管理</h2>
+            <h2>Meal management</h2>
             <form className="staff-form" onSubmit={handleMealSubmit}>
               <input
                 type="text"
-                placeholder="菜品名称"
+                placeholder="Meal name"
                 value={mealForm.name}
                 onChange={(e) => setMealForm((current) => ({ ...current, name: e.target.value }))}
                 required
               />
               <textarea
-                placeholder="菜品描述"
+                placeholder="Description"
                 value={mealForm.description}
                 onChange={(e) => setMealForm((current) => ({ ...current, description: e.target.value }))}
                 rows="3"
               ></textarea>
               <input
                 type="number"
-                placeholder="热量 kcal"
+                placeholder="Calories kcal"
                 value={mealForm.calories}
                 onChange={(e) => setMealForm((current) => ({ ...current, calories: e.target.value }))}
                 required
               />
               <input
                 type="number"
-                placeholder="蛋白质 g"
+                placeholder="Protein g"
                 value={mealForm.protein}
                 onChange={(e) => setMealForm((current) => ({ ...current, protein: e.target.value }))}
                 required
               />
               <input
                 type="number"
-                placeholder="环保评分 1-10"
+                placeholder="Sustainability 1-10"
                 value={mealForm.sustainabilityScore}
                 onChange={(e) =>
                   setMealForm((current) => ({ ...current, sustainabilityScore: e.target.value }))
@@ -287,7 +287,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
                 required
               />
               <label className="staff-file-field">
-                <span>选择展示图片</span>
+                <span>Upload image</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -296,31 +296,31 @@ const Staff = ({ auth, cartCount, onLogout }) => {
               </label>
               {mealForm.imageUrl && (
                 <div className="staff-image-preview">
-                  <img src={mealForm.imageUrl} alt="菜品预览" />
+                  <img src={mealForm.imageUrl} alt="Meal preview" />
                   <button
                     type="button"
                     className="staff-clear-image"
                     onClick={() => setMealForm((current) => ({ ...current, imageUrl: '' }))}
                   >
-                    清除图片
+                    Clear image
                   </button>
                 </div>
               )}
               <input
                 type="text"
-                placeholder="标签，逗号分隔"
+                placeholder="Tags, comma separated"
                 value={mealForm.tagsInput}
                 onChange={(e) => setMealForm((current) => ({ ...current, tagsInput: e.target.value }))}
               />
               <input
                 type="text"
-                placeholder="食材关系，格式: 1:150, 2:80"
+                placeholder="Ingredients, format: 1:150, 2:80"
                 value={mealForm.ingredientsInput}
                 onChange={(e) =>
                   setMealForm((current) => ({ ...current, ingredientsInput: e.target.value }))
                 }
               />
-              <button type="submit">{mealForm.mealId ? '更新菜品' : '创建菜品'}</button>
+              <button type="submit">{mealForm.mealId ? 'Update meal' : 'Create meal'}</button>
             </form>
 
             <div className="staff-list">
@@ -332,15 +332,15 @@ const Staff = ({ auth, cartCount, onLogout }) => {
                     </strong>
                     <p>{meal.description}</p>
                     {meal.imageUrl && (
-                      <p className="staff-image-hint">已配置展示图片</p>
+                      <p className="staff-image-hint">Image configured</p>
                     )}
                   </div>
                   <div className="staff-item-actions">
                     <button type="button" onClick={() => handleEditMeal(meal)}>
-                      编辑
+                      Edit
                     </button>
                     <button type="button" onClick={() => handleDeleteMeal(meal.mealId)}>
-                      删除
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -349,11 +349,11 @@ const Staff = ({ auth, cartCount, onLogout }) => {
           </section>
 
           <section className="staff-card">
-            <h2>食材与库存</h2>
+            <h2>Ingredients & stock</h2>
             <form className="staff-form" onSubmit={handleIngredientSubmit}>
               <input
                 type="number"
-                placeholder="食材 ID，留空表示新增"
+                placeholder="Ingredient ID, leave empty to create"
                 value={ingredientForm.ingredientId}
                 onChange={(e) =>
                   setIngredientForm((current) => ({ ...current, ingredientId: e.target.value }))
@@ -361,14 +361,14 @@ const Staff = ({ auth, cartCount, onLogout }) => {
               />
               <input
                 type="text"
-                placeholder="食材名称"
+                placeholder="Ingredient name"
                 value={ingredientForm.name}
                 onChange={(e) => setIngredientForm((current) => ({ ...current, name: e.target.value }))}
                 required
               />
               <input
                 type="number"
-                placeholder="库存克数"
+                placeholder="Stock in grams"
                 value={ingredientForm.currentQty_g}
                 onChange={(e) =>
                   setIngredientForm((current) => ({ ...current, currentQty_g: e.target.value }))
@@ -385,13 +385,13 @@ const Staff = ({ auth, cartCount, onLogout }) => {
               />
               <input
                 type="text"
-                placeholder="过敏原，逗号分隔"
+                placeholder="Allergens, comma separated"
                 value={ingredientForm.allergensInput}
                 onChange={(e) =>
                   setIngredientForm((current) => ({ ...current, allergensInput: e.target.value }))
                 }
               />
-              <button type="submit">{ingredientForm.ingredientId ? '更新食材' : '新增食材'}</button>
+              <button type="submit">{ingredientForm.ingredientId ? 'Update ingredient' : 'Create ingredient'}</button>
             </form>
             <div className="staff-list">
               {ingredientList.map((ingredient) => (
@@ -413,7 +413,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
                       })
                     }
                   >
-                    填入表单
+                    Fill form
                   </button>
                 </div>
               ))}

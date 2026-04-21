@@ -156,9 +156,9 @@ export const streamAssistantChat = async (messages, handlers = {}) => {
       localStorage.removeItem('greenbite_userId');
       localStorage.removeItem('greenbite_username');
       window.location.href = '/login';
-      throw new Error('登录状态已失效，请重新登录');
+      throw new Error('Session expired. Please sign in again.');
     }
-    throw new Error(text || 'AI 助手流式请求失败');
+    throw new Error(text || 'AI assistant streaming request failed.');
   }
 
   const decoder = new TextDecoder();

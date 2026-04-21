@@ -43,7 +43,7 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
       onClose();
       navigate('/orders');
     } catch (err) {
-      setError(err.message || '订单提交失败');
+      setError(err.message || 'Order submission failed.');
     } finally {
       setSubmitting(false);
     }
@@ -55,7 +55,7 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
 
       <aside className="cart-drawer">
         <div className="cart-header">
-          <h2>待提交订单</h2>
+          <h2>Cart</h2>
           <button className="close-btn" type="button" onClick={onClose}>
             &times;
           </button>
@@ -64,14 +64,14 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
         <div className="cart-items">
           {cart.length === 0 ? (
             <div className="empty-cart">
-              <p>餐车为空</p>
+              <p>Your cart is empty</p>
             </div>
           ) : (
             cart.map((item) => (
               <div key={item.mealId} className="cart-item">
                 <div className="item-info">
                   <h4>{item.name}</h4>
-                  <p>环保分 {item.sustainabilityScore ?? '-'}/10</p>
+                  <p>Sustainability {item.sustainabilityScore ?? '-'}/10</p>
                   <div className="item-stats">
                     <span>🔥 {item.calories} kcal</span>
                     <span>💪 {item.protein}g</span>
@@ -101,11 +101,11 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
 
         <div className="cart-footer">
           <div className="summary-row">
-            <span>总热量</span>
+            <span>Total calories</span>
             <strong>{totalCalories} kcal</strong>
           </div>
           <div className="summary-row summary-total">
-            <span>总蛋白</span>
+            <span>Total protein</span>
             <strong>{totalProtein} g</strong>
           </div>
           {error && <p className="cart-error">{error}</p>}
@@ -115,7 +115,7 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
             disabled={cart.length === 0 || submitting}
             onClick={handleCheckout}
           >
-            {submitting ? '提交中...' : '提交订单'}
+            {submitting ? 'Submitting...' : 'Place order'}
           </button>
         </div>
       </aside>

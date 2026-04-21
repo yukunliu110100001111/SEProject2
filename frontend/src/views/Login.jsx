@@ -48,7 +48,7 @@ const Login = ({ onLoginSuccess }) => {
       onLoginSuccess?.();
       navigate(data.role === 'admin' ? '/dashboard' : data.role === 'staff' ? '/staff' : '/home');
     } catch (err) {
-      setError(err.message || '登录失败');
+      setError(err.message || 'Sign-in failed.');
     } finally {
       setLoading(false);
     }
@@ -86,10 +86,10 @@ const Login = ({ onLoginSuccess }) => {
 
           <form onSubmit={handleSubmit} className="login-form">
             <div className="input-group">
-              <span className="input-label">用户名</span>
+              <span className="input-label">Username</span>
               <input
                 type="text"
-                placeholder="用户名"
+                placeholder="Username"
                 value={form.username}
                 onChange={(e) => handleChange('username', e.target.value)}
                 onFocus={handleFocus}
@@ -98,9 +98,9 @@ const Login = ({ onLoginSuccess }) => {
               />
             </div>
             <div className="input-group">
-              <span className="input-label">密码</span>
+              <span className="input-label">Password</span>
               <PasswordField
-                placeholder="密码"
+                placeholder="Password"
                 value={form.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 visible={showPassword}
@@ -121,13 +121,13 @@ const Login = ({ onLoginSuccess }) => {
             </div>
             {error && <p className="login-error">{error}</p>}
             <button type="submit" disabled={loading}>
-              {loading ? '登录中...' : '登录'}
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
           <div className="login-footer">
             <Link to="/register" className="register-link">
-              还没有账号？点我注册
+              Don&apos;t have an account? Create one
             </Link>
           </div>
         </div>

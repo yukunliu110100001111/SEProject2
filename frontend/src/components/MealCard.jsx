@@ -9,7 +9,7 @@ const MealCard = ({ meal, onAdd, onClick, recommendation }) => (
     <button className="meal-card-hitbox" type="button" onClick={onClick}>
       <div className="meal-image-wrapper">
         <img src={meal.imageUrl || fallbackImage} alt={meal.name} className="meal-image" />
-        <div className="carbon-tag">环保分 {meal.sustainabilityScore ?? '-'}/10</div>
+        <div className="carbon-tag">Sustainability {meal.sustainabilityScore ?? '-'}/10</div>
       </div>
 
       <div className="meal-info">
@@ -46,9 +46,9 @@ const MealCard = ({ meal, onAdd, onClick, recommendation }) => (
       className="add-btn"
       type="button"
       onClick={onAdd}
-      aria-label={`加入 ${meal.name}`}
+      aria-label={`Add ${meal.name}`}
     >
-      加入餐车
+      Add to cart
     </button>
   </article>
 );

@@ -5,9 +5,9 @@ import { getOrderCache, saveOrderCache } from '../utils/storage';
 import './Orders.css';
 
 const statusMap = {
-  pending: { text: '已创建', className: 'status-pending' },
-  confirmed: { text: '已确认', className: 'status-confirmed' },
-  cancelled: { text: '已取消', className: 'status-cancelled' },
+  pending: { text: 'Created', className: 'status-pending' },
+  confirmed: { text: 'Confirmed', className: 'status-confirmed' },
+  cancelled: { text: 'Cancelled', className: 'status-cancelled' },
 };
 
 const Orders = ({ auth, cartCount, onLogout }) => {
@@ -39,7 +39,7 @@ const Orders = ({ auth, cartCount, onLogout }) => {
         )
       );
     } catch (err) {
-      setError(err.message || '订单操作失败');
+      setError(err.message || 'Order action failed.');
     } finally {
       setBusyId(null);
     }
@@ -50,24 +50,24 @@ const Orders = ({ auth, cartCount, onLogout }) => {
       <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
 
       <div className="orders-header">
-        <h1>我的订单</h1>
+        <h1>Orders</h1>
       </div>
 
       {error && <div className="orders-message orders-error">{error}</div>}
 
       <div className="orders-list">
         {orders.length === 0 ? (
-          <div className="orders-message">暂无订单</div>
+          <div className="orders-message">No orders yet.</div>
         ) : (
           orders.map((order) => (
             <div key={order.orderId} className="order-card">
               <div className="order-card-header">
                 <div className="order-meta">
                   <span className="order-date">{order.date}</span>
-                  <span className="order-id">订单号 #{order.orderId}</span>
+                  <span className="order-id">Order #{order.orderId}</span>
                 </div>
                 <div className={`status-badge ${statusMap[order.status]?.className || 'status-pending'}`}>
-                  {statusMap[order.status]?.text || '未知状态'}
+                  {statusMap[order.status]?.text || 'Unknown'}
                 </div>
               </div>
 
@@ -84,11 +84,11 @@ const Orders = ({ auth, cartCount, onLogout }) => {
 
               <div className="order-card-footer">
                 <div className="order-carbon">
-                  <span>总蛋白质</span>
+                  <span>Total protein</span>
                   <strong>{order.totalProtein} g</strong>
                 </div>
                 <div className="order-total">
-                  <span>总热量</span>
+                  <span>Total calories</span>
                   <strong>{order.totalCalories} kcal</strong>
                 </div>
               </div>
@@ -101,7 +101,7 @@ const Orders = ({ auth, cartCount, onLogout }) => {
                     disabled={busyId === order.orderId}
                     onClick={() => handleStatusChange(order.orderId, 'confirm')}
                   >
-                    确认订单
+                    Confirm order
                   </button>
                   <button
                     type="button"
@@ -109,7 +109,7 @@ const Orders = ({ auth, cartCount, onLogout }) => {
                     disabled={busyId === order.orderId}
                     onClick={() => handleStatusChange(order.orderId, 'cancel')}
                   >
-                    取消订单
+                    Cancel order
                   </button>
                 </div>
               )}

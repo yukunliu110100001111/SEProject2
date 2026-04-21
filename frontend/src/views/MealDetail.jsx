@@ -41,7 +41,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
         setRecommendation(recommendationList.find((item) => String(item.mealId) === String(mealId)) || null);
       } catch (err) {
         if (active) {
-          setError(err.message || '详情加载失败');
+          setError(err.message || 'Failed to load details.');
         }
       }
     };
@@ -58,7 +58,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
 
       <div className="detail-shell">
         <button type="button" className="back-link" onClick={() => navigate('/home')}>
-          返回
+          Back
         </button>
 
         {error && <div className="detail-error">{error}</div>}
@@ -68,17 +68,17 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
             <img src={meal.imageUrl || fallbackImage} alt={meal.name} className="detail-image" />
             <div className="detail-content">
               <h1>{meal.name}</h1>
-              <p className="detail-description">{meal.description || '暂无描述'}</p>
+              <p className="detail-description">{meal.description || 'No description'}</p>
               <div className="detail-stats">
                 <span>🔥 {meal.calories} kcal</span>
                 <span>💪 {meal.protein}g</span>
-                <span>🌍 环保分 {meal.sustainabilityScore ?? '-'}/10</span>
-                {recommendation && <span>⭐ 推荐分 {recommendation.score}</span>}
+                <span>🌍 Sustainability {meal.sustainabilityScore ?? '-'}/10</span>
+                {recommendation && <span>⭐ Score {recommendation.score}</span>}
               </div>
               {recommendation && <p className="detail-reason">{recommendation.reason}</p>}
 
               <div className="detail-block">
-                <h2>食材列表</h2>
+                <h2>Ingredients</h2>
                 <ul>
                   {meal.ingredients?.map((ingredient) => (
                     <li key={ingredient.ingredientId}>
@@ -89,7 +89,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
               </div>
 
               <div className="detail-block">
-                <h2>可持续标签</h2>
+                <h2>Tags</h2>
                 <div className="detail-tags">
                   {meal.tags?.map((tag) => (
                     <span key={tag} className="detail-tag">
@@ -100,7 +100,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
               </div>
 
               <button type="button" className="detail-add-btn" onClick={() => onAddToCart(meal)}>
-                加入购物车
+                Add to cart
               </button>
             </div>
           </div>

@@ -9,12 +9,12 @@ import { getMealImageMap } from '../utils/storage';
 import './Home.css';
 
 const categories = [
-  '全部',
-  '低碳优先',
-  '高蛋白',
-  '植物基',
-  '轻食',
-  '库存优先',
+  'All',
+  'Low carbon',
+  'High protein',
+  'Plant-based',
+  'Light',
+  'Stock first',
 ];
 
 const hasTag = (meal, expectedTags) =>
@@ -23,27 +23,27 @@ const hasTag = (meal, expectedTags) =>
   );
 
 const matchesCategory = (meal, category, recommendation) => {
-  if (category === '全部') {
+  if (category === 'All') {
     return true;
   }
 
-  if (category === '低碳优先') {
+  if (category === 'Low carbon') {
     return hasTag(meal, ['low-carbon']) || Number(meal.sustainabilityScore || 0) >= 8;
   }
 
-  if (category === '高蛋白') {
+  if (category === 'High protein') {
     return hasTag(meal, ['high-protein']) || Number(meal.protein || 0) >= 25;
   }
 
-  if (category === '植物基') {
+  if (category === 'Plant-based') {
     return hasTag(meal, ['plant-based', 'vegetarian', 'vegan']);
   }
 
-  if (category === '轻食') {
+  if (category === 'Light') {
     return Number(meal.calories || 0) > 0 && Number(meal.calories || 0) <= 450;
   }
 
-  if (category === '库存优先') {
+  if (category === 'Stock first') {
     return /stock|expiry/i.test(recommendation?.reason || '');
   }
 
@@ -53,7 +53,7 @@ const matchesCategory = (meal, category, recommendation) => {
 const matchesCategories = (meal, activeCategories, recommendation) => {
   if (
     activeCategories.length === 0 ||
-    activeCategories.includes('全部')
+    activeCategories.includes('All')
   ) {
     return true;
   }
@@ -75,7 +75,7 @@ const Home = ({
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [activeCategories, setActiveCategories] = useState(['全部']);
+  const [activeCategories, setActiveCategories] = useState(['All']);
   const [meals, setMeals] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +124,7 @@ const Home = ({
         setRecommendations(recommendationList);
       } catch (err) {
         if (active) {
-          setError(err.message || '推荐加载失败');
+          setError(err.message || 'Failed to load recommendations.');
         }
       } finally {
         if (active) {
@@ -173,14 +173,14 @@ const Home = ({
 
   const handleCategoryToggle = (category) => {
     setActiveCategories((current) => {
-      if (category === '全部') {
-        return ['全部'];
+      if (category === 'All') {
+        return ['All'];
       }
 
-      const next = current.filter((item) => item !== '全部');
+      const next = current.filter((item) => item !== 'All');
       if (next.includes(category)) {
         const reduced = next.filter((item) => item !== category);
-        return reduced.length > 0 ? reduced : ['全部'];
+        return reduced.length > 0 ? reduced : ['All'];
       }
 
       return [...next, category];
@@ -206,7 +206,7 @@ const Home = ({
             <div className="banner-panel">
               <div className="banner-glow banner-glow-left"></div>
               <div className="banner-glow banner-glow-right"></div>
-            <div className="banner-category-row" aria-label="菜品分类">
+            <div className="banner-category-row" aria-label="Meal categories">
               {categories.map((category, index) => (
                 <button
                   key={category}
@@ -221,26 +221,26 @@ const Home = ({
             <div className="banner-search-wrapper">
               <input
                 type="text"
-                placeholder="搜索"
+                placeholder="Search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <div className="banner-copy">
               <span className="banner-kicker">GreenBite</span>
-              <h1>今日推荐</h1>
-                <div className="banner-actions">
-                  <button type="button" className="banner-btn primary" onClick={() => window.scrollTo({ top: 720, behavior: 'smooth' })}>
-                    浏览
-                  </button>
-                  <button type="button" className="banner-btn secondary" onClick={() => setIsCartOpen(true)}>
-                    餐车
-                  </button>
-                </div>
+              <h1>Today&apos;s picks</h1>
+              <div className="banner-actions">
+                <button type="button" className="banner-btn primary" onClick={() => window.scrollTo({ top: 720, behavior: 'smooth' })}>
+                  Browse
+                </button>
+                <button type="button" className="banner-btn secondary" onClick={() => setIsCartOpen(true)}>
+                  Cart
+                </button>
               </div>
             </div>
+            </div>
             {!loading && !error && filteredMeals.length > 0 && (
-              <section className="top-showcase-section" aria-label="菜品展示带">
+              <section className="top-showcase-section" aria-label="Featured meals">
                 <div className="showcase-track-shell">
                   <div className="showcase-marquee">
                     {[0, 1].map((groupIndex) => (
@@ -259,7 +259,7 @@ const Home = ({
                             />
                             <div className="showcase-overlay">
                               <strong>{meal.name}</strong>
-                              <span>环保分 {meal.sustainabilityScore ?? '-'}/10</span>
+                              <span>Sustainability {meal.sustainabilityScore ?? '-'}/10</span>
                             </div>
                           </button>
                         ))}
@@ -281,17 +281,17 @@ const Home = ({
         </div>
         <div className="hero-title-area">
           <h1 className="hero-main-title">
-            为你推荐
+            Recommended for you
           </h1>
         </div>
       </section>
 
       <section className="list-section">
         <div className="list-header">
-          <h2 className="list-title">推荐</h2>
+          <h2 className="list-title">Recommendations</h2>
         </div>
 
-        {loading && <div className="page-card">正在加载推荐...</div>}
+        {loading && <div className="page-card">Loading recommendations...</div>}
         {error && <div className="page-card error-card">{error}</div>}
 
         {!loading && !error && (
@@ -308,7 +308,7 @@ const Home = ({
               ))}
             </div>
           ) : (
-            <div className="page-card">没有符合当前筛选条件的菜品</div>
+            <div className="page-card">No meals match the current filters.</div>
           )
         )}
       </section>

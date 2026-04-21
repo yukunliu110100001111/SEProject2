@@ -45,7 +45,7 @@ const Register = ({ onRegisterSuccess }) => {
       onRegisterSuccess?.();
       navigate('/home');
     } catch (err) {
-      setError(err.message || '注册失败');
+      setError(err.message || 'Sign-up failed.');
     } finally {
       setLoading(false);
     }
@@ -77,16 +77,16 @@ const Register = ({ onRegisterSuccess }) => {
             <div className="brand-logo">🪴</div>
             <div className="login-heading-group">
               <span className="login-eyebrow">Create Account</span>
-              <h2>注册账号</h2>
+              <h2>Create account</h2>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
             <div className="input-group">
-              <span className="input-label">用户名</span>
+              <span className="input-label">Username</span>
               <input
                 type="text"
-                placeholder="用户名"
+                placeholder="Username"
                 value={form.username}
                 onChange={(e) => setForm((current) => ({ ...current, username: e.target.value }))}
                 onFocus={handleFocus}
@@ -95,9 +95,9 @@ const Register = ({ onRegisterSuccess }) => {
               />
             </div>
             <div className="input-group">
-              <span className="input-label">密码</span>
+              <span className="input-label">Password</span>
               <PasswordField
-                placeholder="密码"
+                placeholder="Password"
                 value={form.password}
                 onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
                 visible={showPassword}
@@ -118,13 +118,13 @@ const Register = ({ onRegisterSuccess }) => {
             </div>
             {error && <p className="login-error">{error}</p>}
             <button type="submit" disabled={loading}>
-              {loading ? '注册中...' : '完成注册'}
+              {loading ? 'Creating...' : 'Create account'}
             </button>
           </form>
 
           <div className="login-footer">
             <Link to="/login" className="register-link">
-              登录
+              Back to sign in
             </Link>
           </div>
         </div>

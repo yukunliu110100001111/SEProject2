@@ -3,19 +3,19 @@ import { confirmAssistantAction, streamAssistantChat } from '../api/app';
 import './AiAssistantBubble.css';
 
 const suggestedPrompts = [
-  '推荐三道菜',
-  '解释第一名',
-  '查询订单 1',
-  '搜索鸡肉',
+  'Recommend 3 meals',
+  'Why is the top result first?',
+  'Check order 1',
+  'Search chicken',
 ];
 
 const ambientPrompts = [
-  '要不要看看今天最适合你的菜？',
-  '我可以直接帮你查订单。',
-  '点我，给你挑三道。',
-  '想吃点清爽的？',
-  '也可以直接搜鸡肉。',
-  '今天想吃高蛋白吗？',
+  'Want to see the best picks for you today?',
+  'I can check your order status.',
+  'Tap me for three quick picks.',
+  'Looking for something lighter?',
+  'You can search chicken too.',
+  'Want a higher-protein option today?',
 ];
 
 const AiAssistantBubble = ({ auth }) => {
@@ -24,7 +24,7 @@ const AiAssistantBubble = ({ auth }) => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `你好，${auth?.username || '你'}`,
+      content: `Hi, ${auth?.username || 'there'}`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -118,7 +118,7 @@ const AiAssistantBubble = ({ auth }) => {
                 index === streamIndex
                   ? {
                       ...message,
-                      content: data.summary || '请确认是否执行该操作。',
+                      content: data.summary || 'Please confirm this action.',
                       pendingAction: data,
                       isStreaming: false,
                     }
@@ -134,7 +134,7 @@ const AiAssistantBubble = ({ auth }) => {
                 index === streamIndex
                   ? {
                       ...message,
-                      content: data.reply || message.content || '暂时没有拿到可用回复。',
+                      content: data.reply || message.content || 'No response available right now.',
                       pendingAction: data.pendingAction || null,
                       isStreaming: false,
                     }
@@ -145,12 +145,12 @@ const AiAssistantBubble = ({ auth }) => {
           }
 
           if (event === 'error') {
-            setError(data.message || 'AI 助手暂时不可用');
+            setError(data.message || 'AI assistant is temporarily unavailable.');
           }
         },
       });
     } catch (err) {
-      setError(err.message || 'AI 助手暂时不可用');
+      setError(err.message || 'AI assistant is temporarily unavailable.');
       setMessages((current) =>
         current.map((message, index) =>
           index === streamIndex ? { ...message, isStreaming: false } : message
@@ -188,13 +188,13 @@ const AiAssistantBubble = ({ auth }) => {
         ...current,
         {
           role: 'assistant',
-          content: result.reply || '操作已执行。',
+          content: result.reply || 'Done.',
           pendingAction: null,
           isStreaming: false,
         },
       ]);
     } catch (err) {
-      setError(err.message || '确认执行失败');
+      setError(err.message || 'Confirmation failed.');
     } finally {
       setConfirmingActionId('');
     }
@@ -209,7 +209,7 @@ const AiAssistantBubble = ({ auth }) => {
           setAmbientText('');
           setIsOpen(true);
         }}
-        aria-label="打开 AI 助手"
+        aria-label="Open AI assistant"
       >
         <span className={`ai-bubble-ambient ${ambientText ? 'visible' : ''}`}>
           {ambientText}
@@ -235,7 +235,7 @@ const AiAssistantBubble = ({ auth }) => {
                 type="button"
                 className="ai-bubble-close"
                 onClick={() => setIsOpen(false)}
-                aria-label="关闭 AI 助手"
+                aria-label="Close AI assistant"
               >
                 ×
               </button>
@@ -256,9 +256,9 @@ const AiAssistantBubble = ({ auth }) => {
                   className={`ai-bubble-message ${message.role === 'user' ? 'user' : 'assistant'} ${message.isStreaming ? 'typing' : ''}`}
                 >
                   <div className="ai-bubble-message-head">
-                    <span>{message.role === 'user' ? '你' : 'AI'}</span>
+                    <span>{message.role === 'user' ? 'You' : 'AI'}</span>
                     <span>
-                      {message.pendingAction ? '待确认' : message.isStreaming ? '生成中' : '已完成'}
+                      {message.pendingAction ? 'Pending' : message.isStreaming ? 'Streaming' : 'Done'}
                     </span>
                   </div>
                   {message.isStreaming && !message.content ? (
@@ -284,10 +284,10 @@ const AiAssistantBubble = ({ auth }) => {
                         }
                       >
                         {message.pendingAction.confirmed
-                          ? '已确认'
+                          ? 'Confirmed'
                           : confirmingActionId === message.pendingAction.actionId
-                            ? '确认中...'
-                            : '确认执行'}
+                            ? 'Confirming...'
+                            : 'Confirm'}
                       </button>
                     </div>
                   )}
@@ -307,12 +307,12 @@ const AiAssistantBubble = ({ auth }) => {
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="输入内容"
+                placeholder="Type a message"
                 rows={3}
               />
               <div className="ai-bubble-form-actions">
                 <button type="submit" disabled={loading || !input.trim()}>
-                  {loading ? '发送中...' : '发送'}
+                  {loading ? 'Sending...' : 'Send'}
                 </button>
               </div>
             </form>

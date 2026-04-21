@@ -57,7 +57,7 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
         });
       } catch (err) {
         if (active) {
-          setError(err.message || '资料加载失败');
+          setError(err.message || 'Failed to load profile.');
         }
       } finally {
         if (active) {
@@ -92,9 +92,9 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
       });
       localStorage.setItem('greenbite_username', profile.username);
       onAuthRefresh?.();
-      setMessage('个人信息与饮食偏好已更新。');
+      setMessage('Profile and dietary preferences updated.');
     } catch (err) {
-      setError(err.message || '保存失败');
+      setError(err.message || 'Save failed.');
     } finally {
       setSaving(false);
     }
@@ -111,11 +111,11 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
 
       <div className="profile-content">
         <div className="profile-section stats-section">
-          <h2>概览</h2>
+          <h2>Overview</h2>
           <div className="stats-mini-grid">
             <div className="mini-card">
               <div className="mini-info">
-                <span>总能量摄入</span>
+                <span>Total calories</span>
                 <strong>
                   {achievements.totalCalories} <span>kcal</span>
                 </strong>
@@ -124,7 +124,7 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
             </div>
             <div className="mini-card">
               <div className="mini-info">
-                <span>总蛋白质摄入</span>
+                <span>Total protein</span>
                 <strong>
                   {achievements.totalProtein} <span>g</span>
                 </strong>
@@ -133,9 +133,9 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
             </div>
             <div className="mini-card">
               <div className="mini-info">
-                <span>已提交订单</span>
+                <span>Orders placed</span>
                 <strong>
-                  {achievements.orderCount} <span>单</span>
+                  {achievements.orderCount} <span>orders</span>
                 </strong>
               </div>
               <div className="mini-icon">📦</div>
@@ -144,13 +144,13 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
         </div>
 
         <div className="profile-section settings-section">
-          <h2>偏好</h2>
+          <h2>Preferences</h2>
           {loading ? (
-            <div className="message-box">正在加载资料...</div>
+            <div className="message-box">Loading profile...</div>
           ) : (
             <form onSubmit={handleSubmit} className="pref-form">
               <div className="form-item">
-                <label>用户名</label>
+                <label>Username</label>
                 <input
                   type="text"
                   value={profile.username}
@@ -159,7 +159,7 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
                 />
               </div>
               <div className="form-item">
-                <label>每日热量目标</label>
+                <label>Daily calorie target</label>
                 <input
                   type="number"
                   value={profile.targetCalories}
@@ -168,7 +168,7 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
                 />
               </div>
               <div className="form-item">
-                <label>每日蛋白质目标</label>
+                <label>Daily protein target</label>
                 <input
                   type="number"
                   value={profile.targetProtein}
@@ -177,17 +177,17 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
                 />
               </div>
               <div className="form-item">
-                <label>特殊饮食习惯</label>
+                <label>Diet preference</label>
                 <select
                   value={String(profile.isVegetarian)}
                   onChange={(e) => handleChange('isVegetarian', e.target.value === 'true')}
                 >
-                  <option value="false">均衡饮食</option>
-                  <option value="true">素食优先</option>
+                  <option value="false">Balanced</option>
+                  <option value="true">Vegetarian first</option>
                 </select>
               </div>
               <div className="form-item">
-                <label>过敏原限制</label>
+                <label>Allergen restrictions</label>
                 <input
                   type="text"
                   placeholder="nut, fish, soy"
@@ -198,7 +198,7 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
               {message && <div className="message-box success-box">{message}</div>}
               {error && <div className="message-box error-box">{error}</div>}
               <button type="submit" className="save-btn" disabled={saving}>
-                {saving ? '保存中...' : '保存偏好'}
+                {saving ? 'Saving...' : 'Save preferences'}
               </button>
             </form>
           )}

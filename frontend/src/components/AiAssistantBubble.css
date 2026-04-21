@@ -159,21 +159,26 @@
 
 .ai-bubble-suggestions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  padding: 14px 22px 0;
-  overflow-x: auto;
+  padding: 14px 22px 8px;
+  overflow: visible;
 }
 
 .ai-bubble-suggestions button {
-  flex: 0 0 auto;
+  flex: 0 1 calc(50% - 5px);
+  min-width: 0;
   padding: 10px 14px;
   border: 1px solid rgba(45, 106, 79, 0.12);
-  border-radius: 999px;
+  border-radius: 16px;
   background: #f7fbf8;
   color: #315f4d;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: left;
 }
 
 .ai-bubble-messages {
@@ -381,6 +386,10 @@
     width: 100%;
     max-height: calc(100vh - 24px);
     border-radius: 24px;
+  }
+
+  .ai-bubble-suggestions button {
+    flex-basis: 100%;
   }
 
   .ai-bubble-message {

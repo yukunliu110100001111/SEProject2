@@ -26,8 +26,8 @@ const PasswordField = ({
         type="button"
         className="password-toggle"
         onClick={onToggle}
-        aria-label={visible ? '隐藏密码' : '显示密码'}
-        title={visible ? '隐藏密码' : '显示密码'}
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        title={visible ? 'Hide password' : 'Show password'}
       >
         {visible ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
       </button>

@@ -4,23 +4,23 @@ import { confirmAssistantAction, streamAssistantChat } from '../api/app';
 import './Assistant.css';
 
 const suggestedPrompts = [
-  '根据我的偏好推荐三道菜',
-  '帮我解释为什么当前推荐第一名排在前面',
-  '查询我的订单状态，订单号是 1',
-  '搜索鸡肉相关菜品',
+  'Recommend three meals for me',
+  'Why is the top recommendation first?',
+  'Check order 1',
+  'Search chicken meals',
 ];
 
 const capabilityItems = [
-  { title: '推荐解释', description: '解释当前推荐为什么靠前，关联偏好、库存和低碳标签。' },
-  { title: '订单查询', description: '读取你的订单状态，并给出下一步操作建议。' },
-  { title: '受限写操作', description: '更新偏好或创建订单前，都会先让你确认。' },
+  { title: 'Recommendation rationale', description: 'Explains why items rank first based on preferences, stock, and tags.' },
+  { title: 'Order lookup', description: 'Reads your order status and suggests the next step.' },
+  { title: 'Protected write actions', description: 'Always asks for confirmation before updating preferences or creating an order.' },
 ];
 
 const Assistant = ({ auth, cartCount, onLogout }) => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: '我是 GreenBite AI 助手，可以帮你查询推荐、菜品详情、订单状态；员工和管理员还可以查看库存摘要。',
+      content: 'I am the GreenBite AI assistant. I can help with recommendations, meal details, and orders. Staff and admins can also view inventory summaries.',
     },
   ]);
   const [input, setInput] = useState('');
@@ -65,7 +65,7 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
                 index === streamIndex
                   ? {
                       ...message,
-                      content: data.summary || '请确认是否执行该操作。',
+                      content: data.summary || 'Please confirm this action.',
                       pendingAction: data,
                       isStreaming: false,
                     }
@@ -81,7 +81,7 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
                 index === streamIndex
                   ? {
                       ...message,
-                      content: data.reply || message.content || '暂时没有拿到可用回复。',
+                      content: data.reply || message.content || 'No response available right now.',
                       pendingAction: data.pendingAction || null,
                       isStreaming: false,
                     }
@@ -92,12 +92,12 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
           }
 
           if (event === 'error') {
-            setError(data.message || 'AI 助手暂时不可用');
+            setError(data.message || 'AI assistant is temporarily unavailable.');
           }
         },
       });
     } catch (err) {
-      setError(err.message || 'AI 助手暂时不可用');
+      setError(err.message || 'AI assistant is temporarily unavailable.');
       setMessages((current) =>
         current.map((message, index) =>
           index === streamIndex ? { ...message, isStreaming: false } : message
@@ -133,13 +133,13 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
         ...current,
         {
           role: 'assistant',
-          content: result.reply || '操作已执行。',
+          content: result.reply || 'Done.',
           pendingAction: null,
           isStreaming: false,
         },
       ]);
     } catch (err) {
-      setError(err.message || '确认执行失败');
+      setError(err.message || 'Confirmation failed.');
     } finally {
       setConfirmingActionId('');
     }
@@ -158,24 +158,24 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
         <section className="assistant-hero">
           <div className="assistant-hero-copy">
             <span className="assistant-kicker">Volcengine Ark Assistant</span>
-            <h1>直接问业务问题，AI 会通过后端安全查询本地数据库</h1>
+            <h1>Ask directly. AI reads your product data through controlled backend tools.</h1>
             <p>
-              当前身份是 <strong>{auth.username}</strong>，角色 <strong>{auth.role}</strong>。
-              普通用户可查自己的偏好、推荐和订单；员工和管理员可额外查询库存摘要。
+              Signed in as <strong>{auth.username}</strong>, role <strong>{auth.role}</strong>.
+              Customers can view their own preferences, recommendations, and orders. Staff and admins can also access inventory summaries.
             </p>
           </div>
           <div className="assistant-hero-stats">
             <div className="assistant-stat-card">
-              <span>身份</span>
+              <span>Role</span>
               <strong>{auth.role}</strong>
             </div>
             <div className="assistant-stat-card">
-              <span>数据库访问</span>
-              <strong>后端工具代理</strong>
+              <span>Data access</span>
+              <strong>Backend tools</strong>
             </div>
             <div className="assistant-stat-card">
-              <span>写操作</span>
-              <strong>必须确认</strong>
+              <span>Write actions</span>
+              <strong>Confirmation required</strong>
             </div>
           </div>
         </section>
@@ -183,7 +183,7 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
         <section className="assistant-layout">
           <aside className="assistant-sidecard">
             <div className="assistant-sidecard-block">
-              <span className="assistant-sidecard-title">快捷问题</span>
+              <span className="assistant-sidecard-title">Quick prompts</span>
               <div className="assistant-suggestions">
                 {suggestedPrompts.map((prompt) => (
                   <button key={prompt} type="button" onClick={() => submitMessage(prompt)}>
@@ -194,7 +194,7 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
             </div>
 
             <div className="assistant-sidecard-block">
-              <span className="assistant-sidecard-title">能力说明</span>
+              <span className="assistant-sidecard-title">Capabilities</span>
               <div className="assistant-capability-list">
                 {capabilityItems.map((item) => (
                   <article key={item.title} className="assistant-capability-item">
@@ -210,10 +210,10 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
             <div className="assistant-panel-header">
               <div>
                 <span className="assistant-panel-kicker">Conversation</span>
-                <h2>业务问答面板</h2>
+                <h2>Conversation</h2>
               </div>
               <div className={`assistant-status-chip ${loading ? 'active' : ''}`}>
-                {loading ? 'AI 正在处理中' : '准备就绪'}
+                {loading ? 'Processing' : 'Ready'}
               </div>
             </div>
 
@@ -225,10 +225,10 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
               >
                 <div className="assistant-message-head">
                   <span className="assistant-role">
-                    {message.role === 'user' ? '你' : 'AI'}
+                    {message.role === 'user' ? 'You' : 'AI'}
                   </span>
                     <span className="assistant-message-tag">
-                      {message.pendingAction ? '待确认' : message.isStreaming ? '生成中' : '已完成'}
+                      {message.pendingAction ? 'Pending' : message.isStreaming ? 'Streaming' : 'Done'}
                     </span>
                   </div>
                   {message.isStreaming && !message.content ? (
@@ -244,7 +244,7 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
                     <div className="assistant-action-card">
                       <div className="assistant-action-meta">
                         <strong>{message.pendingAction.actionType}</strong>
-                        <span>需要你确认后才会真正写入数据库</span>
+                        <span>Your confirmation is required before anything is written.</span>
                       </div>
                       <button
                         type="button"
@@ -255,10 +255,10 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
                         }
                       >
                         {message.pendingAction.confirmed
-                          ? '已确认'
+                          ? 'Confirmed'
                           : confirmingActionId === message.pendingAction.actionId
-                            ? '确认中...'
-                            : '确认执行'}
+                            ? 'Confirming...'
+                            : 'Confirm'}
                       </button>
                     </div>
                 )}
@@ -276,21 +276,21 @@ const Assistant = ({ auth, cartCount, onLogout }) => {
               }}
             >
               <div className="assistant-form-meta">
-                <span>直接提问推荐、订单、库存或偏好问题</span>
-                <span>支持确认后执行写操作</span>
+                <span>Ask about recommendations, orders, inventory, or preferences</span>
+                <span>Protected write actions stay behind confirmation</span>
               </div>
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="例如：解释我的推荐理由，或者查询订单 1 的状态"
+                placeholder="For example: explain my top recommendation, or check order 1"
                 rows={4}
               />
               <div className="assistant-form-actions">
                 <span className="assistant-form-tip">
-                  AI 不会直接访问数据库，只会通过后端受限工具查询
+                  AI uses controlled backend tools instead of direct database access
                 </span>
                 <button type="submit" disabled={loading || !input.trim()}>
-                  发送
+                  Send
                 </button>
               </div>
             </form>

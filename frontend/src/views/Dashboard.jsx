@@ -21,7 +21,7 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
         }
       } catch (err) {
         if (active) {
-          setError(err.message || '仪表盘加载失败');
+          setError(err.message || 'Failed to load dashboard.');
         }
       }
     };
@@ -39,7 +39,7 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
       const nextReport = await getSustainabilityReport();
       setReport(nextReport);
     } catch (err) {
-      setReportError(err.message || '报告生成失败');
+      setReportError(err.message || 'Failed to generate report.');
     } finally {
       setLoadingReport(false);
     }
@@ -58,7 +58,7 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
       <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
 
       <div className="dashboard-header">
-        <h1>运营数据中心</h1>
+        <h1>Operations dashboard</h1>
       </div>
 
       {error && <div className="dashboard-message error-message">{error}</div>}
@@ -66,7 +66,7 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
       {data && (
         <div className="dashboard-grid">
           <div className="admin-card stats-card">
-            <h2>低碳餐食选择率</h2>
+            <h2>Low-carbon adoption</h2>
             <div className="gauge-container">
               <div className="gauge-value">{Math.round(Number(data.lowCarbonRate || 0) * 100)}%</div>
               <div className="gauge-bar">
@@ -86,7 +86,7 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
                   <span className="rank-number">0{index + 1}</span>
                   <div className="rank-info">
                     <div className="rank-name">{meal.name}</div>
-                    <div className="rank-count">{meal.orders ?? meal.orderCount ?? 0} 次</div>
+                    <div className="rank-count">{meal.orders ?? meal.orderCount ?? 0} orders</div>
                   </div>
                 </div>
               ))}
@@ -94,7 +94,7 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
           </div>
 
           <div className="admin-card">
-            <h2>库存状态</h2>
+            <h2>Inventory status</h2>
             <div className="stock-list">
               {data.stockUsage.map((item, index) => (
                 <div key={`${item.name}-${index}`} className="stock-item">
@@ -121,12 +121,12 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
 
       <div className="report-panel">
         <button className="report-btn" type="button" onClick={handleLoadReport} disabled={loadingReport}>
-          {loadingReport ? '生成中...' : '生成可持续报告'}
+          {loadingReport ? 'Generating...' : 'Generate sustainability report'}
         </button>
         {reportError && <p className="dashboard-message error-message">{reportError}</p>}
         {report && (
           <div className="report-card">
-            <h3>报告</h3>
+            <h3>Report</h3>
             <p>{report.generatedAt}</p>
             <p>{report.summary}</p>
             <p>{Math.round(Number(report.lowCarbonRate || 0) * 100)}%</p>
