@@ -73,11 +73,20 @@ const Login = ({ onLoginSuccess }) => {
             <span className="login-card-bubble bubble-b">Fresh</span>
             <span className="login-card-bubble bubble-c">Low Carbon</span>
           </div>
-          <div className="brand-logo">🍃</div>
-          <h2>GreenBite</h2>
+          <div className="login-card-glow login-card-glow-top" aria-hidden="true"></div>
+          <div className="login-card-glow login-card-glow-bottom" aria-hidden="true"></div>
 
-          <form onSubmit={handleSubmit}>
+          <div className="login-card-head">
+            <div className="brand-logo">🍃</div>
+            <div className="login-heading-group">
+              <span className="login-eyebrow">Member Access</span>
+              <h2>GreenBite</h2>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="login-form">
             <div className="input-group">
+              <span className="input-label">用户名</span>
               <input
                 type="text"
                 placeholder="用户名"
@@ -89,6 +98,7 @@ const Login = ({ onLoginSuccess }) => {
               />
             </div>
             <div className="input-group">
+              <span className="input-label">密码</span>
               <PasswordField
                 placeholder="密码"
                 value={form.password}
@@ -117,7 +127,7 @@ const Login = ({ onLoginSuccess }) => {
 
           <div className="login-footer">
             <Link to="/register" className="register-link">
-              注册
+              还没有账号？点我注册
             </Link>
           </div>
         </div>

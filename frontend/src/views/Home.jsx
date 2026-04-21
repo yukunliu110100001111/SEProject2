@@ -17,6 +17,52 @@ const categories = [
   '库存优先',
 ];
 
+const hasTag = (meal, expectedTags) =>
+  expectedTags.some((expectedTag) =>
+    meal.tags?.some((tag) => tag?.toLowerCase() === expectedTag)
+  );
+
+const matchesCategory = (meal, category, recommendation) => {
+  if (category === '全部') {
+    return true;
+  }
+
+  if (category === '低碳优先') {
+    return hasTag(meal, ['low-carbon']) || Number(meal.sustainabilityScore || 0) >= 8;
+  }
+
+  if (category === '高蛋白') {
+    return hasTag(meal, ['high-protein']) || Number(meal.protein || 0) >= 25;
+  }
+
+  if (category === '植物基') {
+    return hasTag(meal, ['plant-based', 'vegetarian', 'vegan']);
+  }
+
+  if (category === '轻食') {
+    return Number(meal.calories || 0) > 0 && Number(meal.calories || 0) <= 450;
+  }
+
+  if (category === '库存优先') {
+    return /stock|expiry/i.test(recommendation?.reason || '');
+  }
+
+  return true;
+};
+
+const matchesCategories = (meal, activeCategories, recommendation) => {
+  if (
+    activeCategories.length === 0 ||
+    activeCategories.includes('全部')
+  ) {
+    return true;
+  }
+
+  return activeCategories.every((category) =>
+    matchesCategory(meal, category, recommendation)
+  );
+};
+
 const Home = ({
   auth,
   cart,
@@ -29,6 +75,7 @@ const Home = ({
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [activeCategories, setActiveCategories] = useState(['全部']);
   const [meals, setMeals] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,22 +150,42 @@ const Home = ({
   const filteredMeals = useMemo(() => {
     return meals
       .filter((meal) => {
+        const recommendation = recommendationMap.get(meal.mealId);
         const keyword = search.trim().toLowerCase();
-        if (!keyword) {
-          return true;
-        }
-        return (
+        const matchesKeyword =
+          !keyword ||
           meal.name?.toLowerCase().includes(keyword) ||
           meal.description?.toLowerCase().includes(keyword) ||
-          meal.tags?.some((tag) => tag.toLowerCase().includes(keyword))
-        );
+          meal.tags?.some((tag) => tag.toLowerCase().includes(keyword));
+
+        if (!matchesKeyword) {
+          return false;
+        }
+
+        return matchesCategories(meal, activeCategories, recommendation);
       })
       .sort((a, b) => {
         const left = Number(recommendationMap.get(a.mealId)?.score || 0);
         const right = Number(recommendationMap.get(b.mealId)?.score || 0);
         return right - left;
       });
-  }, [meals, recommendationMap, search]);
+  }, [activeCategories, meals, recommendationMap, search]);
+
+  const handleCategoryToggle = (category) => {
+    setActiveCategories((current) => {
+      if (category === '全部') {
+        return ['全部'];
+      }
+
+      const next = current.filter((item) => item !== '全部');
+      if (next.includes(category)) {
+        const reduced = next.filter((item) => item !== category);
+        return reduced.length > 0 ? reduced : ['全部'];
+      }
+
+      return [...next, category];
+    });
+  };
 
   return (
     <div className="home-container">
@@ -144,7 +211,8 @@ const Home = ({
                 <button
                   key={category}
                   type="button"
-                  className={`category-pill ${index === 0 ? 'active' : ''}`}
+                  className={`category-pill ${activeCategories.includes(category) ? 'active' : ''}`}
+                  onClick={() => handleCategoryToggle(category)}
                 >
                   {category}
                 </button>
@@ -227,17 +295,21 @@ const Home = ({
         {error && <div className="page-card error-card">{error}</div>}
 
         {!loading && !error && (
-          <div className="meal-grid">
-            {filteredMeals.map((meal) => (
-              <MealCard
-                key={meal.mealId}
-                meal={meal}
-                recommendation={recommendationMap.get(meal.mealId)}
-                onAdd={() => onAddToCart(meal)}
-                onClick={() => navigate(`/meals/${meal.mealId}`)}
-              />
-            ))}
-          </div>
+          filteredMeals.length > 0 ? (
+            <div className="meal-grid">
+              {filteredMeals.map((meal) => (
+                <MealCard
+                  key={meal.mealId}
+                  meal={meal}
+                  recommendation={recommendationMap.get(meal.mealId)}
+                  onAdd={() => onAddToCart(meal)}
+                  onClick={() => navigate(`/meals/${meal.mealId}`)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="page-card">没有符合当前筛选条件的菜品</div>
+          )
         )}
       </section>
 

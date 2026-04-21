@@ -70,11 +70,20 @@ const Register = ({ onRegisterSuccess }) => {
             <span className="login-card-bubble bubble-b">Profile</span>
             <span className="login-card-bubble bubble-c">Smart Picks</span>
           </div>
-          <div className="brand-logo">🪴</div>
-          <h2>注册账号</h2>
+          <div className="login-card-glow login-card-glow-top" aria-hidden="true"></div>
+          <div className="login-card-glow login-card-glow-bottom" aria-hidden="true"></div>
 
-          <form onSubmit={handleSubmit}>
+          <div className="login-card-head">
+            <div className="brand-logo">🪴</div>
+            <div className="login-heading-group">
+              <span className="login-eyebrow">Create Account</span>
+              <h2>注册账号</h2>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="login-form">
             <div className="input-group">
+              <span className="input-label">用户名</span>
               <input
                 type="text"
                 placeholder="用户名"
@@ -86,6 +95,7 @@ const Register = ({ onRegisterSuccess }) => {
               />
             </div>
             <div className="input-group">
+              <span className="input-label">密码</span>
               <PasswordField
                 placeholder="密码"
                 value={form.password}
