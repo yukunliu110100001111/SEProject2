@@ -8,7 +8,7 @@ import './MealDetail.css';
 const fallbackImage =
   'https://images.pexels.com/photos/1640774/pexels-photo-1640774.jpeg?auto=compress&cs=tinysrgb&w=1000';
 
-const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
+const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
   const { mealId } = useParams();
   const navigate = useNavigate();
   const [meal, setMeal] = useState(null);
@@ -54,7 +54,7 @@ const MealDetail = ({ auth, cartCount, onLogout, onAddToCart }) => {
 
   return (
     <div className="detail-page">
-      <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
+      <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="detail-shell">
         <button type="button" className="back-link" onClick={() => navigate('/home')}>

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import AiAssistantBubble from '../components/AiAssistantBubble';
-import CartDrawer from '../components/CartDrawer';
 import MealCard from '../components/MealCard';
 import Navbar from '../components/Navbar';
 import { getMealImageMap } from '../utils/storage';
@@ -65,15 +64,12 @@ const matchesCategories = (meal, activeCategories, recommendation) => {
 
 const Home = ({
   auth,
-  cart,
   cartCount,
+  onOpenCart,
   onLogout,
   onAddToCart,
-  onUpdateCartQuantity,
-  onClearCart,
 }) => {
   const navigate = useNavigate();
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [activeCategories, setActiveCategories] = useState(['All']);
   const [meals, setMeals] = useState([]);
@@ -196,7 +192,7 @@ const Home = ({
       <Navbar
         auth={auth}
         cartCount={cartCount}
-        onOpenCart={() => setIsCartOpen(true)}
+        onOpenCart={onOpenCart}
         onLogout={onLogout}
       />
 
@@ -233,7 +229,7 @@ const Home = ({
                 <button type="button" className="banner-btn primary" onClick={() => window.scrollTo({ top: 720, behavior: 'smooth' })}>
                   Browse
                 </button>
-                <button type="button" className="banner-btn secondary" onClick={() => setIsCartOpen(true)}>
+                <button type="button" className="banner-btn secondary" onClick={onOpenCart}>
                   Cart
                 </button>
               </div>
@@ -312,15 +308,6 @@ const Home = ({
           )
         )}
       </section>
-
-      <CartDrawer
-        auth={auth}
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        onUpdateQuantity={onUpdateCartQuantity}
-        onClearCart={onClearCart}
-      />
       <AiAssistantBubble auth={auth} />
     </div>
   );

@@ -10,7 +10,7 @@ const parseAllergens = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
+const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
   const [profile, setProfile] = useState({
     username: auth.username || '',
     targetCalories: 2000,
@@ -102,7 +102,7 @@ const Profile = ({ auth, cartCount, onLogout, onAuthRefresh }) => {
 
   return (
     <div className="profile-container">
-      <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
+      <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="profile-header">
         <div className="profile-avatar">🥗</div>

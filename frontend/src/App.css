@@ -39,5 +39,35 @@ body, html, #root {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: white;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(134, 239, 172, 0.34), transparent 22%),
+    radial-gradient(circle at 82% 16%, rgba(125, 211, 252, 0.26), transparent 24%),
+    linear-gradient(180deg, #fbfefb 0%, #effaf3 38%, #ebf7f3 100%);
+}
+
+.loading-fallback-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 28px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.loading-fallback-shell span {
+  color: #166534;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.loading-fallback-shell strong {
+  color: #0f172a;
+  font-size: 18px;
+  letter-spacing: -0.02em;
 }

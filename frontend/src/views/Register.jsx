@@ -1,13 +1,13 @@
-import React, { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { login, register } from '../api/app';
 import { InteractiveMonsters } from '../components/monsters/InteractiveMonsters';
 import PasswordField from '../components/PasswordField';
 import { saveSession } from '../utils/storage';
+import { pickAuthBubbleMeals } from '../utils/authBubbleMeals';
 import './Login.css';
 
 const Register = ({ onRegisterSuccess }) => {
-  const navigate = useNavigate();
   const [form, setForm] = useState({
     username: '',
     password: '',
@@ -18,6 +18,7 @@ const Register = ({ onRegisterSuccess }) => {
   const [error, setError] = useState('');
   const blurTimeoutRef = useRef(null);
   const passwordInputRef = useRef(null);
+  const bubbleMeals = useMemo(() => pickAuthBubbleMeals(3), []);
 
   const handleFocus = () => {
     if (blurTimeoutRef.current !== null) {
@@ -42,8 +43,9 @@ const Register = ({ onRegisterSuccess }) => {
       await register(form);
       const session = await login(form);
       saveSession(session);
-      onRegisterSuccess?.();
-      navigate('/home');
+      onRegisterSuccess?.(
+        session.role === 'admin' ? '/dashboard' : session.role === 'staff' ? '/staff' : '/home'
+      );
     } catch (err) {
       setError(err.message || 'Sign-up failed.');
     } finally {
@@ -54,7 +56,7 @@ const Register = ({ onRegisterSuccess }) => {
   return (
     <div className="login-container">
       <div className="login-background-brand" aria-hidden="true">
-        GreenBite
+        G<span>r</span>een<span>B</span>ite
       </div>
       <div className="login-blob"></div>
       <div className="login-shell">
@@ -69,9 +71,9 @@ const Register = ({ onRegisterSuccess }) => {
 
         <div className="login-card">
           <div className="login-card-bubbles" aria-hidden="true">
-            <span className="login-card-bubble bubble-a">AI</span>
-            <span className="login-card-bubble bubble-b">Profile</span>
-            <span className="login-card-bubble bubble-c">Smart Picks</span>
+            <span className="login-card-bubble bubble-a">{bubbleMeals[0]}</span>
+            <span className="login-card-bubble bubble-b">{bubbleMeals[1]}</span>
+            <span className="login-card-bubble bubble-c">{bubbleMeals[2]}</span>
           </div>
           <div className="login-card-glow login-card-glow-top" aria-hidden="true"></div>
           <div className="login-card-glow login-card-glow-bottom" aria-hidden="true"></div>

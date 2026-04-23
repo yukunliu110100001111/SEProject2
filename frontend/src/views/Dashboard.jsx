@@ -3,7 +3,7 @@ import { getDashboard, getSustainabilityReport } from '../api/app';
 import Navbar from '../components/Navbar';
 import './Dashboard.css';
 
-const Dashboard = ({ auth, cartCount, onLogout }) => {
+const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [data, setData] = useState(null);
   const [report, setReport] = useState(null);
   const [error, setError] = useState('');
@@ -55,7 +55,7 @@ const Dashboard = ({ auth, cartCount, onLogout }) => {
 
   return (
     <div className="dashboard-container">
-      <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
+      <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="dashboard-header">
         <h1>Operations dashboard</h1>

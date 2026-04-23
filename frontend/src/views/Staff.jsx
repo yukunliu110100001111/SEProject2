@@ -59,7 +59,7 @@ const parseIngredientLinks = (value) =>
     })
     .filter((item) => item.ingredientId && item.weight_g);
 
-const Staff = ({ auth, cartCount, onLogout }) => {
+const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [meals, setMeals] = useState([]);
   const [derivedIngredients, setDerivedIngredients] = useState([]);
   const [mealForm, setMealForm] = useState(emptyMealForm);
@@ -236,7 +236,7 @@ const Staff = ({ auth, cartCount, onLogout }) => {
 
   return (
     <div className="staff-page">
-      <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
+      <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="staff-shell">
         <div className="staff-header">

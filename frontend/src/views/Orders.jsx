@@ -10,7 +10,7 @@ const statusMap = {
   cancelled: { text: 'Cancelled', className: 'status-cancelled' },
 };
 
-const Orders = ({ auth, cartCount, onLogout }) => {
+const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [orders, setOrders] = useState([]);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
@@ -47,7 +47,7 @@ const Orders = ({ auth, cartCount, onLogout }) => {
 
   return (
     <div className="orders-container">
-      <Navbar auth={auth} cartCount={cartCount} onOpenCart={() => {}} onLogout={onLogout} />
+      <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="orders-header">
         <h1>Orders</h1>

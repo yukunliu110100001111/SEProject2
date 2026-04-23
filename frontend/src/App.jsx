@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
+import 'premium-react-loaders/styles';
 import Dashboard from './views/Dashboard';
 import Home from './views/Home';
 import Login from './views/Login';
@@ -9,6 +10,7 @@ import Orders from './views/Orders';
 import Profile from './views/Profile';
 import Register from './views/Register';
 import Staff from './views/Staff';
+import CartDrawer from './components/CartDrawer';
 import {
   clearSession,
   getCart,
@@ -16,9 +18,13 @@ import {
   saveCart,
 } from './utils/storage';
 
+const Loading = lazy(() => import('./views/Loading'));
+
 function App() {
   const [auth, setAuth] = useState(getSession());
   const [cart, setCart] = useState(getCart());
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [pendingNextPath, setPendingNextPath] = useState(null);
 
   const isAuthenticated = Boolean(auth.token);
   const role = auth.role;
@@ -28,13 +34,16 @@ function App() {
     [cart]
   );
 
-  const handleLogin = () => {
+  const handleLogin = (nextPath = '/home') => {
     setAuth(getSession());
+    setPendingNextPath(nextPath);
   };
 
   const handleLogout = () => {
     clearSession();
     saveCart([]);
+    setIsCartOpen(false);
+    setPendingNextPath(null);
     setCart([]);
     setAuth({ token: null, role: null, userId: null, username: null });
   };
@@ -79,6 +88,8 @@ function App() {
     auth,
     cart,
     cartCount,
+    onOpenCart: () => setIsCartOpen(true),
+    onCloseCart: () => setIsCartOpen(false),
     onAuthRefresh: handleLogin,
     onLogout: handleLogout,
     onAddToCart: addToCart,
@@ -88,85 +99,126 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <Login onLoginSuccess={handleLogin} />
-            )
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <Register onRegisterSuccess={handleLogin} />
-            )
-          }
-        />
-        <Route
-          path="/assistant"
-          element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
-        />
-        <Route
-          path="/home"
-          element={
-            isAuthenticated ? <Home {...sharedProps} /> : <Navigate to="/login" replace />
-          }
-        />
-        <Route
-          path="/meals/:mealId"
-          element={
-            isAuthenticated ? (
-              <MealDetail {...sharedProps} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/orders"
-          element={
-            isAuthenticated ? <Orders {...sharedProps} /> : <Navigate to="/login" replace />
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            isAuthenticated ? <Profile {...sharedProps} /> : <Navigate to="/login" replace />
-          }
-        />
-        <Route
-          path="/staff"
-          element={
-            isAuthenticated && (role === 'staff' || role === 'admin') ? (
-              <Staff {...sharedProps} />
-            ) : (
-              <Navigate to="/home" replace />
-            )
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            isAuthenticated && role === 'admin' ? (
-              <Dashboard {...sharedProps} />
-            ) : (
-              <Navigate to="/home" replace />
-            )
-          }
-        />
-        <Route
-          path="/"
-          element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
-        />
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />} />
-      </Routes>
+      <>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={pendingNextPath ? '/loading' : '/home'}
+                  replace
+                  state={pendingNextPath ? { nextPath: pendingNextPath } : undefined}
+                />
+              ) : (
+                <Login onLoginSuccess={handleLogin} />
+              )
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={pendingNextPath ? '/loading' : '/home'}
+                  replace
+                  state={pendingNextPath ? { nextPath: pendingNextPath } : undefined}
+                />
+              ) : (
+                <Register onRegisterSuccess={handleLogin} />
+              )
+            }
+          />
+          <Route
+            path="/assistant"
+            element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
+          />
+          <Route
+            path="/loading"
+            element={
+              isAuthenticated ? (
+                <Suspense
+                  fallback={
+                    <div className="loading-wrapper">
+                      <div className="loading-fallback-shell">
+                        <span>GreenBite</span>
+                        <strong>Loading experience...</strong>
+                      </div>
+                    </div>
+                  }
+                >
+                  <Loading auth={auth} onConsumeTarget={() => setPendingNextPath(null)} />
+                </Suspense>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              isAuthenticated ? <Home {...sharedProps} /> : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/meals/:mealId"
+            element={
+              isAuthenticated ? (
+                <MealDetail {...sharedProps} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              isAuthenticated ? <Orders {...sharedProps} /> : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              isAuthenticated ? <Profile {...sharedProps} /> : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/staff"
+            element={
+              isAuthenticated && (role === 'staff' || role === 'admin') ? (
+                <Staff {...sharedProps} />
+              ) : (
+                <Navigate to="/home" replace />
+              )
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              isAuthenticated && role === 'admin' ? (
+                <Dashboard {...sharedProps} />
+              ) : (
+                <Navigate to="/home" replace />
+              )
+            }
+          />
+          <Route
+            path="/"
+            element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
+          />
+          <Route path="*" element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />} />
+        </Routes>
+        {isAuthenticated && (
+          <CartDrawer
+            auth={auth}
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            cart={cart}
+            onUpdateQuantity={updateCartQuantity}
+            onClearCart={clearCart}
+          />
+        )}
+      </>
     </BrowserRouter>
   );
 }
