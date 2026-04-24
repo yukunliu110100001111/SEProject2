@@ -17,6 +17,7 @@ const Loading = ({ auth, onConsumeTarget }) => {
   const location = useLocation();
   const startedAtRef = useRef(Date.now());
   const [progress, setProgress] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [showFinalizing, setShowFinalizing] = useState(false);
   const burgerStops = useMemo(
@@ -79,6 +80,25 @@ const Loading = ({ auth, onConsumeTarget }) => {
     setIsComplete(true);
     return undefined;
   }, [isComplete, progress]);
+
+  useEffect(() => {
+    let frameId;
+
+    const animate = () => {
+      setDisplayProgress((current) => {
+        const diff = progress - current;
+        if (Math.abs(diff) < 0.12) {
+          return progress;
+        }
+        return current + diff * 0.16;
+      });
+      frameId = window.requestAnimationFrame(animate);
+    };
+
+    frameId = window.requestAnimationFrame(animate);
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [progress]);
 
   useEffect(() => {
     if (!isComplete) {
@@ -170,17 +190,12 @@ const Loading = ({ auth, onConsumeTarget }) => {
               fontWeight={700}
               respectMotionPreference={false}
             />
-            <strong>{progress}%</strong>
           </div>
 
           <div
             className="premium-loading-progress premium-loading-chase"
-            style={{ '--progress-ratio': progress / 100 }}
-            aria-label="Loading progress"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress}
+            style={{ '--progress-ratio': displayProgress / 100 }}
+            aria-hidden="true"
           >
             <div className="premium-loading-chase-track" aria-hidden="true">
               <div className="premium-loading-chase-line"></div>
