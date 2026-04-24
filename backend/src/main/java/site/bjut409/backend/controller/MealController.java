@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import site.bjut409.backend.auth.AuthSupport;
 import site.bjut409.backend.auth.AuthUser;
 import site.bjut409.backend.common.ApiResponse;
@@ -29,16 +31,21 @@ public class MealController {
     }
 
     @GetMapping("/meals")
-    public ApiResponse<List<Map<String, Object>>> meals(@RequestHeader("Authorization") String authorization) {
+    public ApiResponse<List<Map<String, Object>>> meals(@RequestHeader("Authorization") String authorization,
+                                                        @RequestParam(value = "keyword", required = false) String keyword,
+                                                        @RequestParam(value = "tag", required = false) String tag,
+                                                        @RequestParam(value = "lowCarbonOnly", required = false) Boolean lowCarbonOnly) {
         AuthUser actor = authSupport.requireUser(authorization);
-        return ApiResponse.success(appService.listMeals(actor));
+        return ApiResponse.success(appService.listMeals(actor, keyword, tag, lowCarbonOnly));
     }
 
     @GetMapping("/meals/{id}")
     public ApiResponse<Map<String, Object>> meal(@RequestHeader("Authorization") String authorization,
-                                                  @PathVariable("id") Long id) {
+                                                  @PathVariable("id") Long id,
+                                                  @RequestParam(value = "recommendationRequestId", required = false) String recommendationRequestId,
+                                                  @RequestParam(value = "recommendationRankPosition", required = false) Integer recommendationRankPosition) {
         AuthUser actor = authSupport.requireUser(authorization);
-        return ApiResponse.success(appService.mealDetail(actor, id));
+        return ApiResponse.success(appService.mealDetail(actor, id, recommendationRequestId, recommendationRankPosition));
     }
 
     @PostMapping("/meals")
@@ -77,6 +84,14 @@ public class MealController {
         AuthUser actor = authSupport.requireUser(authorization);
         appService.deleteMeal(actor, id);
         return ApiResponse.success();
+    }
+
+    @PostMapping("/meals/{id}/image")
+    public ApiResponse<Map<String, Object>> uploadMealImage(@RequestHeader("Authorization") String authorization,
+                                                            @PathVariable("id") Long id,
+                                                            @RequestPart("file") MultipartFile file) {
+        AuthUser actor = authSupport.requireUser(authorization);
+        return ApiResponse.success(appService.uploadMealImage(actor, id, file));
     }
 
     @GetMapping("/recommendations")

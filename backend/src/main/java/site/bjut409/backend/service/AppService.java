@@ -2,6 +2,7 @@ package site.bjut409.backend.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import site.bjut409.backend.auth.AuthSupport;
 import site.bjut409.backend.auth.AuthUser;
 import site.bjut409.backend.common.BizException;
@@ -13,7 +14,9 @@ import site.bjut409.backend.mapper.MealIngredientMapper;
 import site.bjut409.backend.mapper.MealMapper;
 import site.bjut409.backend.mapper.OrderItemMapper;
 import site.bjut409.backend.mapper.OrderMapper;
+import site.bjut409.backend.mapper.RecommendationEventMapper;
 import site.bjut409.backend.mapper.StockMapper;
+import site.bjut409.backend.mapper.SustainabilityReportMapper;
 import site.bjut409.backend.mapper.TagMapper;
 import site.bjut409.backend.mapper.UserAllergyMapper;
 import site.bjut409.backend.mapper.UserMapper;
@@ -25,11 +28,18 @@ import site.bjut409.backend.model.MealRecord;
 import site.bjut409.backend.model.OrderItemRecord;
 import site.bjut409.backend.model.OrderRecord;
 import site.bjut409.backend.model.StockRecordRow;
+import site.bjut409.backend.model.SustainabilityReportRecord;
 import site.bjut409.backend.model.UserPreferenceRecord;
 import site.bjut409.backend.model.UserRecord;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -58,8 +68,11 @@ public class AppService {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final DashboardMapper dashboardMapper;
+    private final RecommendationEventMapper recommendationEventMapper;
+    private final SustainabilityReportMapper sustainabilityReportMapper;
     private final AuthSupport authSupport;
     private final StockStatusHelper stockStatusHelper;
+    private final ObjectMapper objectMapper;
 
     public AppService(UserMapper userMapper,
                       UserPreferenceMapper userPreferenceMapper,
@@ -74,8 +87,11 @@ public class AppService {
                       OrderMapper orderMapper,
                       OrderItemMapper orderItemMapper,
                       DashboardMapper dashboardMapper,
+                      RecommendationEventMapper recommendationEventMapper,
+                      SustainabilityReportMapper sustainabilityReportMapper,
                       AuthSupport authSupport,
-                      StockStatusHelper stockStatusHelper) {
+                      StockStatusHelper stockStatusHelper,
+                      ObjectMapper objectMapper) {
         this.userMapper = userMapper;
         this.userPreferenceMapper = userPreferenceMapper;
         this.allergenMapper = allergenMapper;
@@ -89,8 +105,11 @@ public class AppService {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.dashboardMapper = dashboardMapper;
+        this.recommendationEventMapper = recommendationEventMapper;
+        this.sustainabilityReportMapper = sustainabilityReportMapper;
         this.authSupport = authSupport;
         this.stockStatusHelper = stockStatusHelper;
+        this.objectMapper = objectMapper;
     }
 
     public Map<String, Object> login(String username, String password) {
@@ -132,6 +151,7 @@ public class AppService {
         data.put("userId", user.getUserId());
         data.put("username", user.getUsername());
         data.put("role", user.getRole());
+        data.put("token", authSupport.issueToken(user.getUserId()));
         return data;
     }
 
@@ -200,7 +220,7 @@ public class AppService {
         }
     }
 
-    public List<Map<String, Object>> listMeals(AuthUser actor) {
+    public List<Map<String, Object>> listMeals(AuthUser actor, String keyword, String tag, Boolean lowCarbonOnly) {
         authSupport.requireRole(actor, "customer", "staff", "admin");
         return mealMapper.listActive().stream().map(m -> {
             Map<String, Object> row = new LinkedHashMap<>();
@@ -209,15 +229,23 @@ public class AppService {
             row.put("calories", m.getCalories());
             row.put("protein", m.getProtein());
             row.put("sustainabilityScore", m.getSustainabilityScore());
+            row.put("imageUrl", m.getImageUrl());
             return row;
-        }).toList();
+        }).filter(row -> matchesMealFilters(row, keyword, tag, lowCarbonOnly)).toList();
     }
 
-    public Map<String, Object> mealDetail(AuthUser actor, Long mealId) {
+    public List<Map<String, Object>> listMeals(AuthUser actor) {
+        return listMeals(actor, null, null, null);
+    }
+
+    public Map<String, Object> mealDetail(AuthUser actor, Long mealId, String recommendationRequestId, Integer recommendationRankPosition) {
         authSupport.requireRole(actor, "customer", "staff", "admin");
         MealRecord meal = mealMapper.findById(mealId);
         if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
             throw new BizException(404, 404, "菜品不存在");
+        }
+        if (recommendationRequestId != null && !recommendationRequestId.isBlank()) {
+            recommendationEventMapper.insert(recommendationRequestId, actor.userId(), mealId, "click", recommendationRankPosition, null);
         }
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("mealId", meal.getMealId());
@@ -225,6 +253,8 @@ public class AppService {
         data.put("description", meal.getDescription());
         data.put("calories", meal.getCalories());
         data.put("protein", meal.getProtein());
+        data.put("sustainabilityScore", meal.getSustainabilityScore());
+        data.put("imageUrl", meal.getImageUrl());
 
         List<Map<String, Object>> ingredients = mealIngredientMapper.findByMealId(mealId).stream().map(i -> {
             Map<String, Object> row = new LinkedHashMap<>();
@@ -235,6 +265,50 @@ public class AppService {
         }).toList();
         data.put("ingredients", ingredients);
         data.put("tags", tagMapper.findTagNamesByMealId(mealId));
+        return data;
+    }
+
+    public Map<String, Object> mealDetail(AuthUser actor, Long mealId) {
+        return mealDetail(actor, mealId, null, null);
+    }
+
+    @Transactional
+    public Map<String, Object> uploadMealImage(AuthUser actor, Long mealId, MultipartFile file) {
+        authSupport.requireRole(actor, "staff", "admin");
+        if (file == null || file.isEmpty()) {
+            throw new BizException(400, 400, "文件为空");
+        }
+        String contentType = file.getContentType();
+        if (!List.of("image/jpeg", "image/png", "image/webp").contains(contentType)) {
+            throw new BizException(400, 400, "文件类型非法");
+        }
+        if (file.getSize() > 5L * 1024 * 1024) {
+            throw new BizException(400, 400, "文件超大小限制");
+        }
+        MealRecord meal = mealMapper.findById(mealId);
+        if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
+            throw new BizException(404, 404, "菜品不存在");
+        }
+        String extension = switch (contentType) {
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> "";
+        };
+        String fileName = "meal-" + mealId + "-" + System.currentTimeMillis() + extension;
+        Path uploadDir = Path.of("uploads", "meals");
+        Path target = uploadDir.resolve(fileName);
+        try {
+            Files.createDirectories(uploadDir);
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            throw new BizException(500, 500, "图片上传失败");
+        }
+        meal.setImageUrl("/uploads/meals/" + fileName);
+        mealMapper.update(meal);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("mealId", mealId);
+        data.put("imageUrl", meal.getImageUrl());
         return data;
     }
 
@@ -347,6 +421,7 @@ public class AppService {
             throw new BizException(404, 404, "用户偏好不存在");
         }
         Set<String> userAllergens = lowerSet(userAllergyMapper.findAllergenNamesByUserId(userId));
+        String recommendationRequestId = "req-" + userId + "-" + System.currentTimeMillis();
 
         List<Map<String, Object>> result = new ArrayList<>();
         for (MealRecord meal : mealMapper.listActive()) {
@@ -369,18 +444,69 @@ public class AppService {
             row.put("name", meal.getName());
             row.put("score", BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP));
             row.put("reason", reasonText(stock, tags, allergenConflict));
+            row.put("calories", meal.getCalories());
+            row.put("protein", meal.getProtein());
+            row.put("sustainabilityScore", meal.getSustainabilityScore());
+            row.put("imageUrl", meal.getImageUrl());
+            row.put("allergenConflict", allergenConflict);
+            row.put("recommendationRequestId", recommendationRequestId);
+            Map<String, Object> scoreBreakdown = new LinkedHashMap<>();
+            scoreBreakdown.put("healthScore", BigDecimal.valueOf(0.4 * health).setScale(2, RoundingMode.HALF_UP));
+            scoreBreakdown.put("preferenceScore", BigDecimal.valueOf(0.3 * preference).setScale(2, RoundingMode.HALF_UP));
+            scoreBreakdown.put("sustainabilityScorePart", BigDecimal.valueOf(0.2 * sustainability).setScale(2, RoundingMode.HALF_UP));
+            scoreBreakdown.put("stockPriorityScore", BigDecimal.valueOf(0.1 * stock).setScale(2, RoundingMode.HALF_UP));
+            row.put("scoreBreakdown", scoreBreakdown);
             result.add(row);
         }
         result.sort(Comparator.comparing((Map<String, Object> m) -> ((BigDecimal) m.get("score"))).reversed());
+        for (int index = 0; index < result.size(); index++) {
+            Map<String, Object> row = result.get(index);
+            int rankPosition = index + 1;
+            row.put("recommendationRankPosition", rankPosition);
+            recommendationEventMapper.insert(recommendationRequestId, userId,
+                    Long.valueOf(String.valueOf(row.get("mealId"))), "exposure", rankPosition, null);
+        }
         return result;
     }
 
+    public Map<String, Object> orderDetail(AuthUser actor, Long orderId) {
+        OrderRecord order = orderMapper.findById(orderId);
+        if (order == null) {
+            throw new BizException(404, 404, "订单不存在");
+        }
+        authSupport.requireSelfOrRole(actor, order.getUserId(), "admin", "staff");
+        return buildOrderView(order);
+    }
+
+    public Map<String, Object> listOrders(AuthUser actor, Long userId, String status, Integer page, Integer size) {
+        int safePage = normalizePage(page);
+        int safeSize = normalizeSize(size);
+        validateOrderStatus(status);
+
+        List<OrderRecord> orders;
+        if ("customer".equals(actor.role())) {
+            Long targetUserId = userId == null ? actor.userId() : userId;
+            authSupport.requireSelfOrRole(actor, targetUserId, "admin", "staff");
+            orders = orderMapper.findByUserId(targetUserId);
+        } else if (userId != null) {
+            orders = orderMapper.findByUserId(userId);
+        } else {
+            orders = orderMapper.findAll();
+        }
+        if (status != null && !status.isBlank()) {
+            orders = orders.stream().filter(order -> status.equals(order.getStatus())).toList();
+        }
+
+        return paginateOrders(orders, safePage, safeSize);
+    }
+
     @Transactional
-    public Map<String, Object> createOrder(AuthUser actor, Long userId, List<Map<String, Object>> items) {
+    public Map<String, Object> createOrder(AuthUser actor, Long userId, String recommendationRequestId, List<Map<String, Object>> items) {
         authSupport.requireSelfOrRole(actor, userId, "admin", "staff");
 
         OrderRecord order = new OrderRecord();
         order.setUserId(userId);
+        order.setRecommendationRequestId(recommendationRequestId);
         order.setStatus("pending");
         orderMapper.insert(order);
 
@@ -396,12 +522,19 @@ public class AppService {
             record.setMealId(mealId);
             record.setQuantity(quantity);
             orderItemMapper.insert(record);
+            if (recommendationRequestId != null && !recommendationRequestId.isBlank()) {
+                recommendationEventMapper.insert(recommendationRequestId, userId, mealId, "selected", null, order.getOrderId());
+            }
         }
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("orderId", order.getOrderId());
         data.put("status", "pending");
         return data;
+    }
+
+    public Map<String, Object> createOrder(AuthUser actor, Long userId, List<Map<String, Object>> items) {
+        return createOrder(actor, userId, null, items);
     }
 
     @Transactional
@@ -466,9 +599,88 @@ public class AppService {
 
     public Map<String, Object> dashboard(AuthUser actor) {
         authSupport.requireRole(actor, "admin");
+        return dashboard(actor, defaultRangeStart(), defaultRangeEndExclusive());
+    }
 
+    public Map<String, Object> sustainabilityReport(AuthUser actor) {
+        return sustainabilityReport(actor, null, null);
+    }
+
+    @Transactional
+    public Map<String, Object> sustainabilityReport(AuthUser actor, LocalDate from, LocalDate to) {
+        authSupport.requireRole(actor, "admin");
+        LocalDate rangeStart = from == null ? LocalDate.now().minusDays(29) : from;
+        LocalDate rangeEnd = to == null ? LocalDate.now() : to;
+        if (rangeEnd.isBefore(rangeStart)) {
+            throw new BizException(400, 400, "参数错误");
+        }
+        LocalDateTime fromAt = rangeStart.atStartOfDay();
+        LocalDateTime toExclusive = rangeEnd.plusDays(1).atStartOfDay();
+
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("generatedAt", LocalDateTime.now().toString());
+        report.put("summary", buildReportSummary(fromAt, toExclusive));
+        report.put("rangeStart", rangeStart.toString());
+        report.put("rangeEnd", rangeEnd.toString());
+        report.putAll(buildDashboardData(fromAt, toExclusive));
+
+        SustainabilityReportRecord record = new SustainabilityReportRecord();
+        record.setSummary(String.valueOf(report.get("summary")));
+        record.setReportData(toJson(report));
+        record.setGeneratedBy(actor.userId());
+        record.setRangeStart(rangeStart);
+        record.setRangeEnd(rangeEnd);
+        sustainabilityReportMapper.insert(record);
+        report.put("reportId", record.getReportId());
+        return report;
+    }
+
+    public Map<String, Object> listSustainabilityReports(AuthUser actor, Integer page, Integer size) {
+        authSupport.requireRole(actor, "admin");
+        int safePage = normalizePage(page);
+        int safeSize = normalizeSize(size);
+        List<Map<String, Object>> items = sustainabilityReportMapper.findAll().stream()
+                .map(this::buildReportHistoryItem)
+                .toList();
+        return paginateItems(items, safePage, safeSize);
+    }
+
+    public Map<String, Object> sustainabilityReportDetail(AuthUser actor, Long reportId) {
+        authSupport.requireRole(actor, "admin");
+        SustainabilityReportRecord record = sustainabilityReportMapper.findById(reportId);
+        if (record == null) {
+            throw new BizException(404, 404, "报告不存在");
+        }
+        return buildStoredReport(record);
+    }
+
+    public Map<String, Object> recommendationAnalytics(AuthUser actor, LocalDate from, LocalDate to) {
+        authSupport.requireRole(actor, "admin");
+        LocalDate rangeStart = from == null ? LocalDate.now().minusDays(29) : from;
+        LocalDate rangeEnd = to == null ? LocalDate.now() : to;
+        if (rangeEnd.isBefore(rangeStart)) {
+            throw new BizException(400, 400, "参数错误");
+        }
+        LocalDateTime fromAt = rangeStart.atStartOfDay();
+        LocalDateTime toExclusive = rangeEnd.plusDays(1).atStartOfDay();
+        return buildRecommendationAnalytics(fromAt, toExclusive, rangeStart, rangeEnd);
+    }
+
+    private Map<String, Object> dashboard(AuthUser actor, LocalDateTime from, LocalDateTime to) {
+        authSupport.requireRole(actor, "admin");
+        return buildDashboardData(from, to);
+    }
+
+    private Map<String, Object> buildDashboardData(LocalDateTime from, LocalDateTime to) {
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("topMeals", dashboardMapper.topMeals());
+        List<Map<String, Object>> topMeals = dashboardMapper.topMeals(from, to);
+        List<Map<String, Object>> topRecommendedMeals = dashboardMapper.topRecommendedMeals(from, to);
+        List<Map<String, Object>> topSelectedMeals = dashboardMapper.topSelectedMeals(from, to);
+        List<Map<String, Object>> topClickedMeals = dashboardMapper.topClickedMeals(from, to);
+        data.put("topMeals", topSelectedMeals.isEmpty() ? topMeals : topSelectedMeals);
+        data.put("topRecommendedMeals", topRecommendedMeals);
+        data.put("topSelectedMeals", topSelectedMeals);
+        data.put("topClickedMeals", topClickedMeals);
 
         List<Map<String, Object>> usage = dashboardMapper.stockUsage().stream().map(row -> {
             Integer qty = asInt(row.get("currentqty"), asInt(row.get("currentQty"), 0));
@@ -478,25 +690,39 @@ public class AppService {
             return mapped;
         }).toList();
         data.put("stockUsage", usage);
+        data.put("highStockIngredients", mapIngredientStats(dashboardMapper.highStockIngredients()));
+        data.put("nearExpiryIngredients", mapIngredientStats(dashboardMapper.nearExpiryIngredients()));
+        data.put("mealSustainabilityStats", dashboardMapper.mealSustainabilityStats());
 
-        Map<String, Object> stat = dashboardMapper.lowCarbonStat();
+        Map<String, Object> stat = dashboardMapper.lowCarbonStat(from, to);
         long low = asLong(stat.get("lowcount"), asLong(stat.get("lowCount"), 0L));
         long total = asLong(stat.get("totalcount"), asLong(stat.get("totalCount"), 0L));
         double ratio = total == 0 ? 0.0 : BigDecimal.valueOf((double) low / total).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        data.put("lowCarbonSelectionCount", low);
         data.put("lowCarbonRate", ratio);
+        data.put("recommendationAnalytics", buildRecommendationAnalytics(from, to, from.toLocalDate(), to.minusDays(1).toLocalDate()));
 
         return data;
     }
 
-    public Map<String, Object> sustainabilityReport(AuthUser actor) {
-        Map<String, Object> dashboard = dashboard(actor);
-        Map<String, Object> report = new LinkedHashMap<>();
-        report.put("generatedAt", LocalDateTime.now().toString());
-        report.put("summary", "sustainability report");
-        report.put("topMeals", dashboard.get("topMeals"));
-        report.put("stockUsage", dashboard.get("stockUsage"));
-        report.put("lowCarbonRate", dashboard.get("lowCarbonRate"));
-        return report;
+    public Map<String, Object> listIngredients(AuthUser actor, String keyword, LocalDate expiryBefore, Integer page, Integer size) {
+        authSupport.requireRole(actor, "staff", "admin");
+        int safePage = normalizePage(page);
+        int safeSize = normalizeSize(size);
+        List<Map<String, Object>> all = ingredientMapper.findAll().stream()
+                .map(this::buildIngredientView)
+                .filter(item -> matchesIngredientFilters(item, keyword, expiryBefore))
+                .toList();
+        return paginateItems(all, safePage, safeSize);
+    }
+
+    public Map<String, Object> ingredientDetail(AuthUser actor, Long ingredientId) {
+        authSupport.requireRole(actor, "staff", "admin");
+        IngredientRecord ingredient = ingredientMapper.findById(ingredientId);
+        if (ingredient == null) {
+            throw new BizException(404, 404, "食材不存在");
+        }
+        return buildIngredientView(ingredient);
     }
 
     private void updateMealRelations(Long mealId, List<String> tags, List<Map<String, Object>> ingredients) {
@@ -652,5 +878,243 @@ public class AppService {
             return n.longValue();
         }
         return Long.valueOf(String.valueOf(obj));
+    }
+
+    private Map<String, Object> paginateOrders(List<OrderRecord> orders, int page, int size) {
+        List<Map<String, Object>> mapped = orders.stream().map(this::buildOrderView).toList();
+        return paginateItems(mapped, page, size);
+    }
+
+    private Map<String, Object> paginateItems(List<Map<String, Object>> items, int page, int size) {
+        int fromIndex = Math.min((page - 1) * size, items.size());
+        int toIndex = Math.min(fromIndex + size, items.size());
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("page", page);
+        data.put("size", size);
+        data.put("total", items.size());
+        data.put("items", items.subList(fromIndex, toIndex));
+        return data;
+    }
+
+    private int normalizePage(Integer page) {
+        return page == null || page < 1 ? 1 : page;
+    }
+
+    private int normalizeSize(Integer size) {
+        if (size == null || size < 1) {
+            return 20;
+        }
+        return Math.min(size, 100);
+    }
+
+    private Map<String, Object> buildOrderView(OrderRecord order) {
+        List<Map<String, Object>> itemViews = new ArrayList<>();
+        int totalCalories = 0;
+        int totalProtein = 0;
+        for (OrderItemRecord item : orderItemMapper.findByOrderId(order.getOrderId())) {
+            MealRecord meal = mealMapper.findById(item.getMealId());
+            int mealCalories = meal == null || meal.getCalories() == null ? 0 : meal.getCalories();
+            int mealProtein = meal == null || meal.getProtein() == null ? 0 : meal.getProtein();
+            totalCalories += mealCalories * item.getQuantity();
+            totalProtein += mealProtein * item.getQuantity();
+
+            Map<String, Object> itemView = new LinkedHashMap<>();
+            itemView.put("mealId", item.getMealId());
+            itemView.put("quantity", item.getQuantity());
+            itemView.put("name", meal == null ? null : meal.getName());
+            itemView.put("calories", meal == null ? null : meal.getCalories());
+            itemView.put("protein", meal == null ? null : meal.getProtein());
+            itemView.put("sustainabilityScore", meal == null ? null : meal.getSustainabilityScore());
+            itemView.put("imageUrl", meal == null ? null : meal.getImageUrl());
+            itemViews.add(itemView);
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("orderId", order.getOrderId());
+        data.put("userId", order.getUserId());
+        data.put("status", order.getStatus());
+        data.put("createdAt", order.getCreatedAt() == null ? null : order.getCreatedAt().toString());
+        data.put("confirmedAt", order.getConfirmedAt() == null ? null : order.getConfirmedAt().toString());
+        data.put("cancelledAt", order.getCancelledAt() == null ? null : order.getCancelledAt().toString());
+        data.put("items", itemViews);
+        data.put("totalCalories", totalCalories);
+        data.put("totalProtein", totalProtein);
+        return data;
+    }
+
+    private Map<String, Object> buildIngredientView(IngredientRecord ingredient) {
+        StockRecordRow stock = stockMapper.findLatestByIngredientId(ingredient.getIngredientId());
+        Integer currentQty = stock == null ? null : stock.getCurrentQtyG();
+        LocalDate expiryDate = stock == null ? null : stock.getExpiryDate();
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("ingredientId", ingredient.getIngredientId());
+        data.put("name", ingredient.getName());
+        data.put("allergens", ingredientAllergenMapper.findAllergenNamesByIngredientId(ingredient.getIngredientId()));
+        data.put("currentQty_g", currentQty);
+        data.put("expiryDate", expiryDate == null ? null : expiryDate.toString());
+        data.put("stockStatus", stockStatusHelper.calcStatus(currentQty, expiryDate));
+        return data;
+    }
+
+    private boolean matchesMealFilters(Map<String, Object> row, String keyword, String tag, Boolean lowCarbonOnly) {
+        if (keyword != null && !keyword.isBlank()) {
+            String name = String.valueOf(row.get("name")).toLowerCase();
+            if (!name.contains(keyword.trim().toLowerCase())) {
+                return false;
+            }
+        }
+        Long mealId = Long.valueOf(String.valueOf(row.get("mealId")));
+        if (tag != null && !tag.isBlank() && !tagMapper.findTagNamesByMealId(mealId).contains(tag)) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(lowCarbonOnly) && asInt(row.get("sustainabilityScore"), 0) < 8) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean matchesIngredientFilters(Map<String, Object> item, String keyword, LocalDate expiryBefore) {
+        if (keyword != null && !keyword.isBlank()) {
+            String name = String.valueOf(item.get("name")).toLowerCase();
+            if (!name.contains(keyword.trim().toLowerCase())) {
+                return false;
+            }
+        }
+        if (expiryBefore != null) {
+            Object expiry = item.get("expiryDate");
+            if (expiry == null || LocalDate.parse(String.valueOf(expiry)).isAfter(expiryBefore)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void validateOrderStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return;
+        }
+        if (!List.of("pending", "confirmed", "cancelled").contains(status)) {
+            throw new BizException(400, 400, "参数错误");
+        }
+    }
+
+    private List<Map<String, Object>> mapIngredientStats(List<Map<String, Object>> rows) {
+        return rows.stream().map(row -> {
+            Integer qty = asInt(row.get("currentQty_g"), 0);
+            LocalDate expiry = row.get("expiryDate") instanceof LocalDate d ? d : null;
+            Map<String, Object> mapped = new LinkedHashMap<>(row);
+            mapped.put("stockStatus", stockStatusHelper.calcStatus(qty, expiry));
+            if (expiry != null) {
+                mapped.put("expiryDate", expiry.toString());
+            }
+            return mapped;
+        }).toList();
+    }
+
+    private Map<String, Object> buildRecommendationAnalytics(LocalDateTime from, LocalDateTime to, LocalDate rangeStart, LocalDate rangeEnd) {
+        Map<String, Object> summary = dashboardMapper.recommendationSummary(from, to);
+        long exposures = asLong(summary.get("exposurecount"), asLong(summary.get("exposureCount"), 0L));
+        long clicks = asLong(summary.get("clickcount"), asLong(summary.get("clickCount"), 0L));
+        long selected = asLong(summary.get("selectedcount"), asLong(summary.get("selectedCount"), 0L));
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("rangeStart", rangeStart.toString());
+        data.put("rangeEnd", rangeEnd.toString());
+        data.put("totalExposureCount", exposures);
+        data.put("totalClickCount", clicks);
+        data.put("totalSelectedCount", selected);
+        data.put("clickThroughRate", ratio(clicks, exposures));
+        data.put("selectionRate", ratio(selected, exposures));
+        data.put("clickToSelectionRate", ratio(selected, clicks));
+        data.put("topRecommendedMeals", dashboardMapper.topRecommendedMeals(from, to));
+        data.put("topClickedMeals", dashboardMapper.topClickedMeals(from, to));
+        data.put("topSelectedMeals", dashboardMapper.topSelectedMeals(from, to));
+        data.put("positionPerformance", mapPositionStats(dashboardMapper.recommendationPositionStats(from, to)));
+        return data;
+    }
+
+    private List<Map<String, Object>> mapPositionStats(List<Map<String, Object>> rows) {
+        return rows.stream().map(row -> {
+            long exposures = asLong(row.get("exposurecount"), asLong(row.get("exposureCount"), 0L));
+            long clicks = asLong(row.get("clickcount"), asLong(row.get("clickCount"), 0L));
+            long selected = asLong(row.get("selectedcount"), asLong(row.get("selectedCount"), 0L));
+            Map<String, Object> mapped = new LinkedHashMap<>();
+            mapped.put("rankPosition", asInt(row.get("rankposition"), asInt(row.get("rankPosition"), 0)));
+            mapped.put("exposureCount", exposures);
+            mapped.put("clickCount", clicks);
+            mapped.put("selectedCount", selected);
+            mapped.put("clickThroughRate", ratio(clicks, exposures));
+            mapped.put("selectionRate", ratio(selected, exposures));
+            mapped.put("clickToSelectionRate", ratio(selected, clicks));
+            return mapped;
+        }).toList();
+    }
+
+    private Map<String, Object> buildStoredReport(SustainabilityReportRecord record) {
+        Map<String, Object> report = parseJson(record.getReportData());
+        report.put("reportId", record.getReportId());
+        report.put("generatedAt", record.getGeneratedAt() == null ? null : record.getGeneratedAt().toString());
+        report.put("summary", record.getSummary());
+        report.put("rangeStart", record.getRangeStart() == null ? null : record.getRangeStart().toString());
+        report.put("rangeEnd", record.getRangeEnd() == null ? null : record.getRangeEnd().toString());
+        return report;
+    }
+
+    private Map<String, Object> buildReportHistoryItem(SustainabilityReportRecord record) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("reportId", record.getReportId());
+        item.put("summary", record.getSummary());
+        item.put("generatedAt", record.getGeneratedAt() == null ? null : record.getGeneratedAt().toString());
+        item.put("rangeStart", record.getRangeStart() == null ? null : record.getRangeStart().toString());
+        item.put("rangeEnd", record.getRangeEnd() == null ? null : record.getRangeEnd().toString());
+        return item;
+    }
+
+    private Map<String, Object> parseJson(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new BizException(500, 500, "报告解析失败");
+        }
+    }
+
+    private String toJson(Map<String, Object> value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            throw new BizException(500, 500, "报告序列化失败");
+        }
+    }
+
+    private String buildReportSummary(LocalDateTime from, LocalDateTime to) {
+        Map<String, Object> stat = dashboardMapper.lowCarbonStat(from, to);
+        long low = asLong(stat.get("lowcount"), asLong(stat.get("lowCount"), 0L));
+        long total = asLong(stat.get("totalcount"), asLong(stat.get("totalCount"), 0L));
+        int rate = total == 0 ? 0 : (int) Math.round((double) low * 100 / total);
+        List<Map<String, Object>> highStock = mapIngredientStats(dashboardMapper.highStockIngredients());
+        String focus = highStock.stream()
+                .limit(2)
+                .map(row -> String.valueOf(row.get("name")))
+                .reduce((left, right) -> left + " 和 " + right)
+                .orElse("暂无明显高库存食材");
+        long days = Math.max(1, java.time.Duration.between(from, to).toDays());
+        return "过去 " + days + " 天低碳餐选择率为 " + rate + "%，高库存食材主要集中在 " + focus + "。";
+    }
+
+    private double ratio(long numerator, long denominator) {
+        if (denominator <= 0) {
+            return 0.0;
+        }
+        return BigDecimal.valueOf((double) numerator / denominator).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private LocalDateTime defaultRangeStart() {
+        return LocalDate.now().minusDays(29).atStartOfDay();
+    }
+
+    private LocalDateTime defaultRangeEndExclusive() {
+        return LocalDate.now().plusDays(1).atStartOfDay();
     }
 }

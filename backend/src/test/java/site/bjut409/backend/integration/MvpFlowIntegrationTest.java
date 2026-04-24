@@ -9,6 +9,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import site.bjut409.backend.auth.TokenStore;
 import site.bjut409.backend.service.DemoDataService;
 
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -64,7 +66,13 @@ class MvpFlowIntegrationTest {
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registerPayload))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString(StandardCharsets.UTF_8));
+                    assertEquals("new_user", root.get("data").get("username").asText());
+                    assertEquals("customer", root.get("data").get("role").asText());
+                    assertTrue(root.get("data").get("token").asText().startsWith("token-"));
+                });
 
         String loginPayload = """
                 {
@@ -174,7 +182,17 @@ class MvpFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         JsonNode recRoot = objectMapper.readTree(recBody).get("data");
         JsonNode first = recRoot.get(0);
-        assertEquals(2, first.get("mealId").asInt());
+        assertTrue(first.get("mealId").asInt() != 1);
+        JsonNode conflictedMeal = null;
+        for (JsonNode item : recRoot) {
+            if (item.get("mealId").asInt() == 1) {
+                conflictedMeal = item;
+                break;
+            }
+        }
+        assertTrue(conflictedMeal != null);
+        assertEquals("allergen conflict", conflictedMeal.get("reason").asText());
+        assertTrue(conflictedMeal.get("allergenConflict").asBoolean());
     }
 
     @Test
@@ -235,13 +253,21 @@ class MvpFlowIntegrationTest {
     @Test
     void meals_and_recommendations_should_work() throws Exception {
         String customerToken = tokenOf("customer1", "123456");
-        mockMvc.perform(get("/meals")
+        String mealsBody = mockMvc.perform(get("/meals")
                         .header("Authorization", "Bearer " + customerToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode mealsRoot = objectMapper.readTree(mealsBody);
+        assertTrue(mealsRoot.get("data").isArray());
+        assertTrue(mealsRoot.get("data").get(0).has("imageUrl"));
 
-        mockMvc.perform(get("/meals/1")
+        String mealBody = mockMvc.perform(get("/meals/1")
                         .header("Authorization", "Bearer " + customerToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode mealRoot = objectMapper.readTree(mealBody);
+        assertEquals(8, mealRoot.get("data").get("sustainabilityScore").asInt());
+        assertTrue(mealRoot.get("data").has("imageUrl"));
 
         String recBody = mockMvc.perform(get("/recommendations").param("userId", "1")
                         .header("Authorization", "Bearer " + customerToken))
@@ -249,6 +275,311 @@ class MvpFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         JsonNode root = objectMapper.readTree(recBody);
         assertTrue(root.get("data").isArray());
+        assertTrue(root.get("data").get(0).has("calories"));
+        assertTrue(root.get("data").get(0).has("protein"));
+        assertTrue(root.get("data").get(0).has("sustainabilityScore"));
+        assertTrue(root.get("data").get(0).has("imageUrl"));
+        assertTrue(root.get("data").get(0).has("allergenConflict"));
+        assertTrue(root.get("data").get(0).has("scoreBreakdown"));
+    }
+
+    @Test
+    void orders_query_should_return_detail_and_paginated_list() throws Exception {
+        String customerToken = tokenOf("customer1", "123456");
+        String staffToken = tokenOf("staff1", "123456");
+        String createPayload = """
+                {
+                  "userId":1,
+                  "recommendationRequestId":"req-20260424-0001",
+                  "items":[
+                    {"mealId":1,"quantity":2},
+                    {"mealId":2,"quantity":1}
+                  ]
+                }
+                """;
+        String createBody = mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        long orderId = objectMapper.readTree(createBody).get("data").get("orderId").asLong();
+
+        String detailBody = mockMvc.perform(get("/orders/" + orderId)
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode detail = objectMapper.readTree(detailBody).get("data");
+        assertEquals(orderId, detail.get("orderId").asLong());
+        assertEquals(1, detail.get("userId").asInt());
+        assertEquals("pending", detail.get("status").asText());
+        assertTrue(detail.get("createdAt").asText().contains("T"));
+        assertTrue(detail.has("confirmedAt"));
+        assertTrue(detail.has("cancelledAt"));
+        assertEquals(2, detail.get("items").size());
+        assertTrue(detail.get("items").get(0).has("calories"));
+        assertTrue(detail.get("items").get(0).has("protein"));
+        assertTrue(detail.get("items").get(0).has("sustainabilityScore"));
+        assertTrue(detail.get("items").get(0).has("imageUrl"));
+        assertEquals(1280, detail.get("totalCalories").asInt());
+        assertEquals(80, detail.get("totalProtein").asInt());
+
+        String listBody = mockMvc.perform(get("/orders")
+                        .param("userId", "1")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode list = objectMapper.readTree(listBody).get("data");
+        assertEquals(1, list.get("page").asInt());
+        assertEquals(20, list.get("size").asInt());
+        assertEquals(1, list.get("total").asInt());
+        assertEquals(orderId, list.get("items").get(0).get("orderId").asLong());
+
+        mockMvc.perform(get("/orders")
+                        .param("userId", "2")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/orders")
+                        .param("userId", "1")
+                        .param("status", "pending")
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void ingredients_query_should_return_detail_and_paginated_list() throws Exception {
+        String staffToken = tokenOf("staff1", "123456");
+        String customerToken = tokenOf("customer1", "123456");
+
+        String updatePayload = """
+                {
+                  "name":"Chicken",
+                  "allergens":["nut","fish"]
+                }
+                """;
+        mockMvc.perform(put("/ingredients/1")
+                        .header("Authorization", "Bearer " + staffToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updatePayload))
+                .andExpect(status().isOk());
+
+        String listBody = mockMvc.perform(get("/ingredients")
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode list = objectMapper.readTree(listBody).get("data");
+        assertEquals(1, list.get("page").asInt());
+        assertEquals(20, list.get("size").asInt());
+        assertTrue(list.get("total").asInt() >= 1);
+        assertEquals(1, list.get("items").get(0).get("ingredientId").asInt());
+        assertTrue(list.get("items").get(0).has("stockStatus"));
+
+        String detailBody = mockMvc.perform(get("/ingredients/1")
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode detail = objectMapper.readTree(detailBody).get("data");
+        assertEquals("Chicken", detail.get("name").asText());
+        assertEquals(8000, detail.get("currentQty_g").asInt());
+        assertEquals("high_stock", detail.get("stockStatus").asText());
+        assertEquals("fish", detail.get("allergens").get(0).asText());
+        assertEquals("nut", detail.get("allergens").get(1).asText());
+
+        mockMvc.perform(get("/ingredients")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isForbidden());
+
+        String filteredBody = mockMvc.perform(get("/ingredients")
+                        .param("keyword", "Chick")
+                        .param("expiryBefore", "2026-05-02")
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode filtered = objectMapper.readTree(filteredBody).get("data");
+        assertEquals(1, filtered.get("items").size());
+        assertEquals("Chicken", filtered.get("items").get(0).get("name").asText());
+    }
+
+    @Test
+    void meals_filter_image_upload_and_dashboard_enhancements_should_work() throws Exception {
+        String customerToken = tokenOf("customer1", "123456");
+        String staffToken = tokenOf("staff1", "123456");
+        String adminToken = tokenOf("admin1", "123456");
+
+        String filteredMealsBody = mockMvc.perform(get("/meals")
+                        .param("keyword", "Garden")
+                        .param("tag", "plant-based")
+                        .param("lowCarbonOnly", "true")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode filteredMeals = objectMapper.readTree(filteredMealsBody).get("data");
+        assertEquals(1, filteredMeals.size());
+        assertEquals("Tofu Garden Bowl", filteredMeals.get(0).get("name").asText());
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "cover.png",
+                MediaType.IMAGE_PNG_VALUE,
+                "fake-png".getBytes(StandardCharsets.UTF_8)
+        );
+        String uploadBody = mockMvc.perform(multipart("/meals/1/image")
+                        .file(file)
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode upload = objectMapper.readTree(uploadBody).get("data");
+        assertEquals(1, upload.get("mealId").asInt());
+        assertTrue(upload.get("imageUrl").asText().startsWith("/uploads/meals/"));
+
+        String mealBody = mockMvc.perform(get("/meals/1")
+                        .param("recommendationRequestId", "req-20260424-0002")
+                        .param("recommendationRankPosition", "3")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode meal = objectMapper.readTree(mealBody).get("data");
+        assertTrue(meal.get("imageUrl").asText().startsWith("/uploads/meals/"));
+
+        String createPayload = """
+                {
+                  "userId":1,
+                  "recommendationRequestId":"req-20260424-0002",
+                  "items":[
+                    {"mealId":1,"quantity":1}
+                  ]
+                }
+                """;
+        String createBody = mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        long orderId = objectMapper.readTree(createBody).get("data").get("orderId").asLong();
+        mockMvc.perform(post("/orders/" + orderId + "/confirm")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk());
+
+        String dashboardBody = mockMvc.perform(get("/dashboard")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode dashboard = objectMapper.readTree(dashboardBody).get("data");
+        assertTrue(dashboard.has("topMeals"));
+        assertTrue(dashboard.has("topRecommendedMeals"));
+        assertTrue(dashboard.has("topSelectedMeals"));
+        assertTrue(dashboard.has("highStockIngredients"));
+        assertTrue(dashboard.has("nearExpiryIngredients"));
+        assertTrue(dashboard.has("mealSustainabilityStats"));
+        assertTrue(dashboard.has("lowCarbonSelectionCount"));
+
+        String reportBody = mockMvc.perform(get("/reports/sustainability")
+                        .param("from", "2026-04-01")
+                        .param("to", "2026-04-24")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode report = objectMapper.readTree(reportBody).get("data");
+        assertTrue(report.has("reportId"));
+        assertTrue(report.has("generatedAt"));
+        assertEquals("2026-04-01", report.get("rangeStart").asText());
+        assertEquals("2026-04-24", report.get("rangeEnd").asText());
+        assertTrue(report.has("topMeals"));
+        assertTrue(report.has("topRecommendedMeals"));
+        assertTrue(report.has("topSelectedMeals"));
+        assertTrue(report.has("topClickedMeals"));
+        assertTrue(report.has("highStockIngredients"));
+        assertTrue(report.has("nearExpiryIngredients"));
+        assertTrue(report.has("mealSustainabilityStats"));
+        assertTrue(report.has("lowCarbonSelectionCount"));
+        assertTrue(report.has("recommendationAnalytics"));
+    }
+
+    @Test
+    void sustainability_report_history_and_recommendation_analytics_should_work() throws Exception {
+        String customerToken = tokenOf("customer1", "123456");
+        String adminToken = tokenOf("admin1", "123456");
+
+        String recommendationBody = mockMvc.perform(get("/recommendations").param("userId", "1")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode recommendations = objectMapper.readTree(recommendationBody).get("data");
+        JsonNode first = recommendations.get(0);
+        long mealId = first.get("mealId").asLong();
+        String recommendationRequestId = first.get("recommendationRequestId").asText();
+        int rankPosition = first.get("recommendationRankPosition").asInt();
+
+        mockMvc.perform(get("/meals/" + mealId)
+                        .param("recommendationRequestId", recommendationRequestId)
+                        .param("recommendationRankPosition", String.valueOf(rankPosition))
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk());
+
+        String createPayload = """
+                {
+                  "userId":1,
+                  "recommendationRequestId":"%s",
+                  "items":[
+                    {"mealId":%d,"quantity":1}
+                  ]
+                }
+                """.formatted(recommendationRequestId, mealId);
+        String orderBody = mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        long orderId = objectMapper.readTree(orderBody).get("data").get("orderId").asLong();
+        mockMvc.perform(post("/orders/" + orderId + "/confirm")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk());
+
+        String analyticsBody = mockMvc.perform(get("/reports/recommendations/analytics")
+                        .param("from", "2026-04-01")
+                        .param("to", "2026-04-24")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode analytics = objectMapper.readTree(analyticsBody).get("data");
+        assertTrue(analytics.get("totalExposureCount").asInt() >= recommendations.size());
+        assertTrue(analytics.get("totalClickCount").asInt() >= 1);
+        assertTrue(analytics.get("totalSelectedCount").asInt() >= 1);
+        assertTrue(analytics.has("topRecommendedMeals"));
+        assertTrue(analytics.has("topClickedMeals"));
+        assertTrue(analytics.has("topSelectedMeals"));
+        assertTrue(analytics.get("positionPerformance").isArray());
+
+        String reportBody = mockMvc.perform(get("/reports/sustainability")
+                        .param("from", "2026-04-01")
+                        .param("to", "2026-04-24")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode report = objectMapper.readTree(reportBody).get("data");
+        long reportId = report.get("reportId").asLong();
+
+        String historyBody = mockMvc.perform(get("/reports/sustainability/history")
+                        .param("page", "1")
+                        .param("size", "20")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode history = objectMapper.readTree(historyBody).get("data");
+        assertTrue(history.get("total").asInt() >= 1);
+        assertEquals(reportId, history.get("items").get(0).get("reportId").asLong());
+
+        String detailBody = mockMvc.perform(get("/reports/sustainability/" + reportId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode detail = objectMapper.readTree(detailBody).get("data");
+        assertEquals(reportId, detail.get("reportId").asLong());
+        assertTrue(detail.has("recommendationAnalytics"));
+        assertTrue(detail.has("topClickedMeals"));
     }
 
     @Test
@@ -365,7 +696,7 @@ class MvpFlowIntegrationTest {
 
         String addIng = """
                 {
-                  "name":"Broccoli",
+                  "name":"Broccoli New",
                   "currentQty_g":3000,
                   "expiryDate":"2026-03-30"
                 }

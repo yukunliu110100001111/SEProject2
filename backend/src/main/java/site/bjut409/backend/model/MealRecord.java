@@ -10,5 +10,6 @@ public class MealRecord {
     private Integer calories;
     private Integer protein;
     private Integer sustainabilityScore;
+    private String imageUrl;
     private Boolean isDeleted;
 }

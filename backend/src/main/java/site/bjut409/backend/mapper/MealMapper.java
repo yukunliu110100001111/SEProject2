@@ -12,17 +12,17 @@ import java.util.List;
 @Mapper
 public interface MealMapper {
 
-    @Select("select meal_id, name, description, calories, protein, sustainability_score, is_deleted from meals where is_deleted = false order by meal_id")
+    @Select("select meal_id, name, description, calories, protein, sustainability_score, image_url, is_deleted from meals where is_deleted = false order by meal_id")
     List<MealRecord> listActive();
 
-    @Select("select meal_id, name, description, calories, protein, sustainability_score, is_deleted from meals where meal_id = #{mealId}")
+    @Select("select meal_id, name, description, calories, protein, sustainability_score, image_url, is_deleted from meals where meal_id = #{mealId}")
     MealRecord findById(Long mealId);
 
-    @Insert("insert into meals(name, description, calories, protein, sustainability_score, is_deleted) values(#{name}, #{description}, #{calories}, #{protein}, #{sustainabilityScore}, false)")
+    @Insert("insert into meals(name, description, calories, protein, sustainability_score, image_url, is_deleted) values(#{name}, #{description}, #{calories}, #{protein}, #{sustainabilityScore}, #{imageUrl}, false)")
     @Options(useGeneratedKeys = true, keyProperty = "mealId", keyColumn = "meal_id")
     int insert(MealRecord meal);
 
-    @Update("update meals set name=#{name}, description=#{description}, calories=#{calories}, protein=#{protein}, sustainability_score=#{sustainabilityScore} where meal_id=#{mealId}")
+    @Update("update meals set name=#{name}, description=#{description}, calories=#{calories}, protein=#{protein}, sustainability_score=#{sustainabilityScore}, image_url=#{imageUrl} where meal_id=#{mealId}")
     int update(MealRecord meal);
 
     @Update("update meals set is_deleted = true where meal_id = #{mealId}")

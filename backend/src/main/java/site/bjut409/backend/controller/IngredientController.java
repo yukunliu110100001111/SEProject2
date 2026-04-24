@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import site.bjut409.backend.auth.AuthSupport;
 import site.bjut409.backend.auth.AuthUser;
@@ -25,6 +27,23 @@ public class IngredientController {
     public IngredientController(AuthSupport authSupport, AppService appService) {
         this.authSupport = authSupport;
         this.appService = appService;
+    }
+
+    @GetMapping("/ingredients")
+    public ApiResponse<Map<String, Object>> listIngredients(@RequestHeader("Authorization") String authorization,
+                                                            @RequestParam(value = "keyword", required = false) String keyword,
+                                                            @RequestParam(value = "expiryBefore", required = false) String expiryBefore,
+                                                            @RequestParam(value = "page", defaultValue = "1") Integer page,
+                                                            @RequestParam(value = "size", defaultValue = "20") Integer size) {
+        AuthUser actor = authSupport.requireUser(authorization);
+        return ApiResponse.success(appService.listIngredients(actor, keyword, parseDate(expiryBefore), page, size));
+    }
+
+    @GetMapping("/ingredients/{id}")
+    public ApiResponse<Map<String, Object>> ingredientDetail(@RequestHeader("Authorization") String authorization,
+                                                             @PathVariable("id") Long id) {
+        AuthUser actor = authSupport.requireUser(authorization);
+        return ApiResponse.success(appService.ingredientDetail(actor, id));
     }
 
     @PostMapping("/ingredients")
