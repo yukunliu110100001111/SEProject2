@@ -176,8 +176,8 @@ const Loading = ({ auth, onConsumeTarget }) => {
 
         <div className="premium-loading-copy">
           <span className="premium-loading-kicker">GreenBite</span>
-          <h1>Preparing your experience</h1>
-          <p>Launching a polished transition before you land on your dashboard.</p>
+          <h1>What would you like to eat today?</h1>
+          <p>We're lining up a few fresh ideas for your next meal.</p>
 
           <div className="premium-loading-status">
             <LoadingText
