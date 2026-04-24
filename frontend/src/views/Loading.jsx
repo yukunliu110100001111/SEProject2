@@ -4,7 +4,6 @@ import {
   LoadingText,
   MorphBlob,
   OrbitDots,
-  ProgressBar,
 } from 'premium-react-loaders';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './Loading.css';
@@ -20,6 +19,14 @@ const Loading = ({ auth, onConsumeTarget }) => {
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [showFinalizing, setShowFinalizing] = useState(false);
+  const burgerStops = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => ({
+        id: index,
+        ratio: (index + 1) / 8,
+      })),
+    []
+  );
 
   const nextPath = useMemo(() => {
     if (location.state?.nextPath) {
@@ -166,20 +173,43 @@ const Loading = ({ auth, onConsumeTarget }) => {
             <strong>{progress}%</strong>
           </div>
 
-          <ProgressBar
-            value={progress}
-            height={12}
-            color="#22c55e"
-            secondaryColor="#6ee7b7"
-            gradient
-            ariaLabel="Loading progress"
-            className="premium-loading-progress"
-            style={{ width: '100%' }}
-            respectMotionPreference={false}
-          />
+          <div
+            className="premium-loading-progress premium-loading-chase"
+            style={{ '--progress-ratio': progress / 100 }}
+            aria-label="Loading progress"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+          >
+            <div className="premium-loading-chase-track" aria-hidden="true">
+              <div className="premium-loading-chase-line"></div>
+
+              {burgerStops.map((stop) => (
+                <div
+                  key={stop.id}
+                  className={`premium-loading-burger ${
+                    progress >= stop.ratio * 100 ? 'is-eaten' : ''
+                  }`}
+                  style={{ '--burger-ratio': stop.ratio }}
+                >
+                  <span className="burger-bun bun-top"></span>
+                  <span className="burger-lettuce"></span>
+                  <span className="burger-patty"></span>
+                  <span className="burger-bun bun-bottom"></span>
+                </div>
+              ))}
+
+              <div className="premium-loading-pacman">
+                <span className="pacman-body"></span>
+                <span className="pacman-eye"></span>
+                <span className="pacman-mouth"></span>
+              </div>
+            </div>
+          </div>
 
           <div className="premium-loading-caption">
-            {showFinalizing ? 'Almost there' : 'Building the next scene'}
+            {showFinalizing ? 'Almost there' : 'Pac-Man is clearing the burger lane'}
           </div>
         </div>
       </div>
