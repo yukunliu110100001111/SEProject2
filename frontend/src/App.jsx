@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import 'premium-react-loaders/styles';
 import Dashboard from './views/Dashboard';
+import Assistant from './views/Assistant';
 import Home from './views/Home';
 import Login from './views/Login';
 import MealDetail from './views/MealDetail';
@@ -62,11 +63,23 @@ function App() {
       if (existing) {
         return current.map((item) =>
           item.mealId === meal.mealId
-            ? { ...item, quantity: item.quantity + quantity }
+            ? {
+                ...item,
+                quantity: item.quantity + quantity,
+                recommendationRequestId:
+                  item.recommendationRequestId || meal.recommendationRequestId || null,
+              }
             : item
         );
       }
-      return [...current, { ...meal, quantity }];
+      return [
+        ...current,
+        {
+          ...meal,
+          recommendationRequestId: meal.recommendationRequestId || null,
+          quantity,
+        },
+      ];
     });
   };
 
@@ -131,7 +144,9 @@ function App() {
           />
           <Route
             path="/assistant"
-            element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
+            element={
+              isAuthenticated ? <Assistant {...sharedProps} /> : <Navigate to="/login" replace />
+            }
           />
           <Route
             path="/loading"

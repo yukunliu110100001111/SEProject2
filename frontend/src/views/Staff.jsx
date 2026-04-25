@@ -3,20 +3,16 @@ import {
   createIngredient,
   createMeal,
   deleteMeal,
+  getIngredientDetail,
+  getIngredients,
   getMealDetail,
   getMeals,
   updateIngredient,
   updateMeal,
   updateStock,
+  uploadMealImage,
 } from '../api/app';
 import Navbar from '../components/Navbar';
-import {
-  getMealImageMap,
-  removeMealImage,
-  saveMealImage,
-  getStaffIngredientCache,
-  saveStaffIngredientCache,
-} from '../utils/storage';
 import './Staff.css';
 
 const emptyMealForm = {
@@ -27,6 +23,7 @@ const emptyMealForm = {
   protein: '',
   sustainabilityScore: '',
   imageUrl: '',
+  imageFile: null,
   tagsInput: '',
   ingredientsInput: '',
 };
@@ -61,45 +58,31 @@ const parseIngredientLinks = (value) =>
 
 const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [meals, setMeals] = useState([]);
-  const [derivedIngredients, setDerivedIngredients] = useState([]);
+  const [ingredients, setIngredients] = useState([]);
   const [mealForm, setMealForm] = useState(emptyMealForm);
   const [ingredientForm, setIngredientForm] = useState(emptyIngredientForm);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const ingredientList = useMemo(() => {
-    const merged = new Map();
-    [...derivedIngredients, ...getStaffIngredientCache()].forEach((item) => {
-      merged.set(item.ingredientId, item);
-    });
-    return Array.from(merged.values()).sort((a, b) => a.ingredientId - b.ingredientId);
-  }, [derivedIngredients]);
+    return [...ingredients].sort((a, b) => a.ingredientId - b.ingredientId);
+  }, [ingredients]);
 
   const refreshData = async () => {
+    setLoading(true);
     setError('');
-    const mealList = await getMeals();
-    const detailedMeals = await Promise.all(mealList.map((meal) => getMealDetail(meal.mealId)));
-    const imageMap = getMealImageMap();
-    setMeals(
-      detailedMeals.map((meal) => ({
-        ...meal,
-        imageUrl: imageMap[String(meal.mealId)] || meal.imageUrl || '',
-      }))
-    );
-
-    const dedup = new Map();
-    detailedMeals.forEach((meal) => {
-      meal.ingredients?.forEach((ingredient) => {
-        dedup.set(ingredient.ingredientId, {
-          ingredientId: ingredient.ingredientId,
-          name: ingredient.name,
-          currentQty_g: '',
-          expiryDate: '',
-          allergensInput: '',
-        });
-      });
-    });
-    setDerivedIngredients(Array.from(dedup.values()));
+    try {
+      const [mealList, ingredientData] = await Promise.all([
+        getMeals(),
+        getIngredients({ page: 1, size: 100 }),
+      ]);
+      const detailedMeals = await Promise.all(mealList.map((meal) => getMealDetail(meal.mealId)));
+      setMeals(detailedMeals);
+      setIngredients(ingredientData.items || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -121,6 +104,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
     reader.onload = () => {
       setMealForm((current) => ({
         ...current,
+        imageFile: file,
         imageUrl: typeof reader.result === 'string' ? reader.result : '',
       }));
     };
@@ -143,14 +127,17 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
     };
 
     try {
+      let targetMealId = mealForm.mealId;
       if (mealForm.mealId) {
         await updateMeal(mealForm.mealId, payload);
-        saveMealImage(mealForm.mealId, mealForm.imageUrl.trim());
         setMessage(`Meal #${mealForm.mealId} updated.`);
       } else {
         const created = await createMeal(payload);
-        saveMealImage(created.mealId, mealForm.imageUrl.trim());
+        targetMealId = created.mealId;
         setMessage('Meal created.');
+      }
+      if (targetMealId && mealForm.imageFile) {
+        await uploadMealImage(targetMealId, mealForm.imageFile);
       }
       setMealForm(emptyMealForm);
       await refreshData();
@@ -168,6 +155,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
       protein: meal.protein || '',
       sustainabilityScore: meal.sustainabilityScore || '',
       imageUrl: meal.imageUrl || '',
+      imageFile: null,
       tagsInput: (meal.tags || []).join(', '),
       ingredientsInput: (meal.ingredients || [])
         .map((ingredient) => `${ingredient.ingredientId}:${ingredient.weight_g}`)
@@ -180,7 +168,6 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
     setMessage('');
     try {
       await deleteMeal(mealId);
-      removeMealImage(mealId);
       setMessage(`Meal #${mealId} deleted.`);
       await refreshData();
     } catch (err) {
@@ -207,24 +194,13 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
         });
         setMessage(`Ingredient #${ingredientForm.ingredientId} updated.`);
       } else {
-        const created = await createIngredient({
+        await createIngredient({
           name: ingredientForm.name,
           currentQty_g: Number(ingredientForm.currentQty_g),
           expiryDate: ingredientForm.expiryDate,
           allergens,
         });
-        const nextCache = [
-          ...getStaffIngredientCache().filter((item) => item.ingredientId !== created.ingredientId),
-          {
-            ingredientId: created.ingredientId,
-            name: ingredientForm.name,
-            currentQty_g: ingredientForm.currentQty_g,
-            expiryDate: ingredientForm.expiryDate,
-            allergensInput: ingredientForm.allergensInput,
-          },
-        ];
-        saveStaffIngredientCache(nextCache);
-        setMessage(`Ingredient #${created.ingredientId} created.`);
+        setMessage('Ingredient created.');
       }
 
       setIngredientForm(emptyIngredientForm);
@@ -245,6 +221,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
         {message && <div className="staff-message staff-success">{message}</div>}
         {error && <div className="staff-message staff-error">{error}</div>}
+        {loading && <div className="staff-message">Loading staff data...</div>}
 
         <div className="staff-grid">
           <section className="staff-card">
@@ -400,18 +377,29 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
                     <strong>
                       #{ingredient.ingredientId} {ingredient.name}
                     </strong>
+                    <p>
+                      {ingredient.currentQty_g ?? 0} g · {ingredient.stockStatus || 'normal'}
+                    </p>
+                    <p>
+                      {ingredient.expiryDate || 'No expiry'} · {(ingredient.allergens || []).join(', ') || 'No allergens'}
+                    </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() =>
-                      setIngredientForm({
-                        ingredientId: ingredient.ingredientId,
-                        name: ingredient.name || '',
-                        currentQty_g: ingredient.currentQty_g || '',
-                        expiryDate: ingredient.expiryDate || '',
-                        allergensInput: ingredient.allergensInput || '',
-                      })
-                    }
+                    onClick={async () => {
+                      try {
+                        const detail = await getIngredientDetail(ingredient.ingredientId);
+                        setIngredientForm({
+                          ingredientId: detail.ingredientId,
+                          name: detail.name || '',
+                          currentQty_g: detail.currentQty_g || '',
+                          expiryDate: detail.expiryDate || '',
+                          allergensInput: (detail.allergens || []).join(', '),
+                        });
+                      } catch (err) {
+                        setError(err.message || 'Failed to load ingredient detail.');
+                      }
+                    }}
                   >
                     Fill form
                   </button>

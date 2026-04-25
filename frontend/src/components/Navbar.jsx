@@ -32,6 +32,11 @@ const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
             Profile
           </Link>
         </li>
+        <li>
+          <Link to="/assistant" className={isActive('/assistant')}>
+            Assistant
+          </Link>
+        </li>
         {(role === 'staff' || role === 'admin') && (
           <li>
             <Link to="/staff" className={`staff-link ${isActive('/staff')}`}>

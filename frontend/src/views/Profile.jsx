@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getUser, updatePreferences, updateUser } from '../api/app';
+import { getOrders, getUser, updatePreferences, updateUser } from '../api/app';
 import Navbar from '../components/Navbar';
-import { getOrderCache } from '../utils/storage';
 import './Profile.css';
 
 const parseAllergens = (value) =>
@@ -22,9 +21,9 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState([]);
 
   const achievements = useMemo(() => {
-    const orders = getOrderCache();
     return orders.reduce(
       (sum, order) => ({
         orderCount: sum.orderCount + 1,
@@ -44,7 +43,10 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
 
     const loadProfile = async () => {
       try {
-        const data = await getUser(auth.userId);
+        const [data, orderData] = await Promise.all([
+          getUser(auth.userId),
+          getOrders({ userId: auth.userId, page: 1, size: 100 }),
+        ]);
         if (!active) {
           return;
         }
@@ -55,6 +57,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
           isVegetarian: Boolean(data.preferences?.isVegetarian),
           allergensInput: (data.preferences?.allergens || []).join(', '),
         });
+        setOrders(orderData.items || []);
       } catch (err) {
         if (active) {
           setError(err.message || 'Failed to load profile.');

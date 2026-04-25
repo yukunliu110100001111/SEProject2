@@ -34,16 +34,18 @@ export const updatePreferences = (userId, data) =>
     data,
   });
 
-export const getMeals = () =>
+export const getMeals = (params = {}) =>
   request({
     url: '/meals',
     method: 'get',
+    params,
   });
 
-export const getMealDetail = (mealId) =>
+export const getMealDetail = (mealId, params = {}) =>
   request({
     url: `/meals/${mealId}`,
     method: 'get',
+    params,
   });
 
 export const getRecommendations = (userId) =>
@@ -57,6 +59,19 @@ export const createOrder = (data) =>
     url: '/orders',
     method: 'post',
     data,
+  });
+
+export const getOrders = (params = {}) =>
+  request({
+    url: '/orders',
+    method: 'get',
+    params,
+  });
+
+export const getOrderDetail = (orderId) =>
+  request({
+    url: `/orders/${orderId}`,
+    method: 'get',
   });
 
 export const confirmOrder = (orderId) =>
@@ -91,11 +106,34 @@ export const deleteMeal = (mealId) =>
     method: 'delete',
   });
 
+export const uploadMealImage = (mealId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request({
+    url: `/meals/${mealId}/image`,
+    method: 'post',
+    data: formData,
+  });
+};
+
 export const createIngredient = (data) =>
   request({
     url: '/ingredients',
     method: 'post',
     data,
+  });
+
+export const getIngredients = (params = {}) =>
+  request({
+    url: '/ingredients',
+    method: 'get',
+    params,
+  });
+
+export const getIngredientDetail = (ingredientId) =>
+  request({
+    url: `/ingredients/${ingredientId}`,
+    method: 'get',
   });
 
 export const updateIngredient = (ingredientId, data) =>

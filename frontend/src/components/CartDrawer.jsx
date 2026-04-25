@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createOrder } from '../api/app';
-import { getOrderCache, saveOrderCache } from '../utils/storage';
 import './CartDrawer.css';
 
 const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth }) => {
@@ -21,27 +20,19 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
     setError('');
 
     try {
+      const recommendationRequestId =
+        cart.find((item) => item.recommendationRequestId)?.recommendationRequestId || null;
       const response = await createOrder({
         userId: Number(auth.userId),
+        recommendationRequestId,
         items: cart.map((item) => ({
           mealId: item.mealId,
           quantity: item.quantity,
         })),
       });
-
-      const newOrder = {
-        orderId: response.orderId,
-        status: response.status,
-        date: new Date().toISOString(),
-        items: cart,
-        totalCalories,
-        totalProtein,
-      };
-
-      saveOrderCache([newOrder, ...getOrderCache()]);
       onClearCart();
       onClose();
-      navigate('/orders');
+      navigate('/orders', { state: { createdOrderId: response.orderId } });
     } catch (err) {
       setError(err.message || 'Order submission failed.');
     } finally {

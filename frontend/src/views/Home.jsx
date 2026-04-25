@@ -4,7 +4,6 @@ import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import AiAssistantBubble from '../components/AiAssistantBubble';
 import MealCard from '../components/MealCard';
 import Navbar from '../components/Navbar';
-import { getMealImageMap } from '../utils/storage';
 import './Home.css';
 
 const categories = [
@@ -110,12 +109,8 @@ const Home = ({
           return;
         }
 
-        const imageMap = getMealImageMap();
         setMeals(
-          detailList.map((meal) => ({
-            ...meal,
-            imageUrl: imageMap[String(meal.mealId)] || meal.imageUrl,
-          }))
+          detailList.map((meal) => ({ ...meal }))
         );
         setRecommendations(recommendationList);
       } catch (err) {
@@ -241,12 +236,23 @@ const Home = ({
                   <div className="showcase-marquee">
                     {[0, 1].map((groupIndex) => (
                       <div className="showcase-track" key={groupIndex}>
-                        {filteredMeals.map((meal) => (
+                        {filteredMeals.map((meal) => {
+                          const recommendation = recommendationMap.get(meal.mealId);
+                          return (
                           <button
                             key={`${groupIndex}-${meal.mealId}`}
                             type="button"
                             className="showcase-card"
-                            onClick={() => navigate(`/meals/${meal.mealId}`)}
+                            onClick={() =>
+                              navigate(`/meals/${meal.mealId}`, {
+                                state: recommendation
+                                  ? {
+                                      recommendationRequestId: recommendation.recommendationRequestId,
+                                      recommendationRankPosition: recommendation.recommendationRankPosition,
+                                    }
+                                  : undefined,
+                              })
+                            }
                           >
                             <img
                               src={meal.imageUrl || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=500'}
@@ -258,7 +264,8 @@ const Home = ({
                               <span>Sustainability {meal.sustainabilityScore ?? '-'}/10</span>
                             </div>
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     ))}
                   </div>
@@ -293,15 +300,32 @@ const Home = ({
         {!loading && !error && (
           filteredMeals.length > 0 ? (
             <div className="meal-grid">
-              {filteredMeals.map((meal) => (
+              {filteredMeals.map((meal) => {
+                const recommendation = recommendationMap.get(meal.mealId);
+                return (
                 <MealCard
                   key={meal.mealId}
                   meal={meal}
-                  recommendation={recommendationMap.get(meal.mealId)}
-                  onAdd={() => onAddToCart(meal)}
-                  onClick={() => navigate(`/meals/${meal.mealId}`)}
+                  recommendation={recommendation}
+                  onAdd={() =>
+                    onAddToCart({
+                      ...meal,
+                      recommendationRequestId: recommendation?.recommendationRequestId || null,
+                    })
+                  }
+                  onClick={() =>
+                    navigate(`/meals/${meal.mealId}`, {
+                      state: recommendation
+                        ? {
+                            recommendationRequestId: recommendation.recommendationRequestId,
+                            recommendationRankPosition: recommendation.recommendationRankPosition,
+                          }
+                        : undefined,
+                    })
+                  }
                 />
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="page-card">No meals match the current filters.</div>

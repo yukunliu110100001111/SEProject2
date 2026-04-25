@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import Navbar from '../components/Navbar';
-import { getMealImageMap } from '../utils/storage';
 import './MealDetail.css';
 
 const fallbackImage =
@@ -10,6 +9,7 @@ const fallbackImage =
 
 const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
   const { mealId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [meal, setMeal] = useState(null);
   const [recommendation, setRecommendation] = useState(null);
@@ -21,20 +21,22 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
     const loadData = async () => {
       try {
         const [mealData, mealList, recommendationList] = await Promise.all([
-          getMealDetail(mealId),
+          getMealDetail(mealId, {
+            recommendationRequestId: location.state?.recommendationRequestId,
+            recommendationRankPosition: location.state?.recommendationRankPosition,
+          }),
           getMeals(),
           getRecommendations(auth.userId),
         ]);
         if (!active) {
           return;
         }
-        const imageMap = getMealImageMap();
         const mealSummary =
           mealList.find((item) => String(item.mealId) === String(mealId)) || {};
         setMeal({
           ...mealSummary,
           ...mealData,
-          imageUrl: imageMap[String(mealId)] || mealData.imageUrl || mealSummary.imageUrl,
+          imageUrl: mealData.imageUrl || mealSummary.imageUrl,
           sustainabilityScore:
             mealData.sustainabilityScore ?? mealSummary.sustainabilityScore,
         });
@@ -50,7 +52,7 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
     return () => {
       active = false;
     };
-  }, [auth.userId, mealId]);
+  }, [auth.userId, location.state, mealId]);
 
   return (
     <div className="detail-page">
@@ -99,7 +101,16 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
                 </div>
               </div>
 
-              <button type="button" className="detail-add-btn" onClick={() => onAddToCart(meal)}>
+              <button
+                type="button"
+                className="detail-add-btn"
+                onClick={() =>
+                  onAddToCart({
+                    ...meal,
+                    recommendationRequestId: recommendation?.recommendationRequestId || null,
+                  })
+                }
+              >
                 Add to cart
               </button>
             </div>

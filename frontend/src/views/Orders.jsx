@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { cancelOrder, confirmOrder } from '../api/app';
+import { useLocation } from 'react-router-dom';
+import { cancelOrder, confirmOrder, getOrders } from '../api/app';
 import Navbar from '../components/Navbar';
-import { getOrderCache, saveOrderCache } from '../utils/storage';
 import './Orders.css';
 
 const statusMap = {
@@ -11,33 +11,36 @@ const statusMap = {
 };
 
 const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getOrders({ userId: auth.userId, page: 1, size: 100 });
+      setOrders(data.items || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load orders.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setOrders(getOrderCache());
-  }, []);
-
-  const updateCachedOrders = (updater) => {
-    setOrders((current) => {
-      const next = typeof updater === 'function' ? updater(current) : updater;
-      saveOrderCache(next);
-      return next;
-    });
-  };
+    loadOrders();
+  }, [auth.userId]);
 
   const handleStatusChange = async (orderId, action) => {
     setBusyId(orderId);
     setError('');
 
     try {
-      const response = action === 'confirm' ? await confirmOrder(orderId) : await cancelOrder(orderId);
-      updateCachedOrders((current) =>
-        current.map((order) =>
-          order.orderId === orderId ? { ...order, status: response.status } : order
-        )
-      );
+      await (action === 'confirm' ? confirmOrder(orderId) : cancelOrder(orderId));
+      await loadOrders();
     } catch (err) {
       setError(err.message || 'Order action failed.');
     } finally {
@@ -53,17 +56,24 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
         <h1>Orders</h1>
       </div>
 
+      {location.state?.createdOrderId && (
+        <div className="orders-message">
+          Order #{location.state.createdOrderId} has been created.
+        </div>
+      )}
       {error && <div className="orders-message orders-error">{error}</div>}
 
       <div className="orders-list">
-        {orders.length === 0 ? (
+        {loading ? (
+          <div className="orders-message">Loading orders...</div>
+        ) : orders.length === 0 ? (
           <div className="orders-message">No orders yet.</div>
         ) : (
           orders.map((order) => (
             <div key={order.orderId} className="order-card">
               <div className="order-card-header">
                 <div className="order-meta">
-                  <span className="order-date">{order.date}</span>
+                  <span className="order-date">{order.createdAt || '-'}</span>
                   <span className="order-id">Order #{order.orderId}</span>
                 </div>
                 <div className={`status-badge ${statusMap[order.status]?.className || 'status-pending'}`}>
