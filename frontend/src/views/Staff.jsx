@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createIngredient,
   createMeal,
@@ -64,6 +64,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const mealImageInputRef = useRef(null);
 
   const ingredientList = useMemo(() => {
     return [...ingredients].sort((a, b) => a.ingredientId - b.ingredientId);
@@ -91,7 +92,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
   const handleMealImageChange = (file) => {
     if (!file) {
-      setMealForm((current) => ({ ...current, imageUrl: '' }));
+      setMealForm((current) => ({ ...current, imageUrl: '', imageFile: null }));
       return;
     }
 
@@ -109,6 +110,13 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
       }));
     };
     reader.readAsDataURL(file);
+  };
+
+  const clearMealImage = () => {
+    setMealForm((current) => ({ ...current, imageUrl: '', imageFile: null }));
+    if (mealImageInputRef.current) {
+      mealImageInputRef.current.value = '';
+    }
   };
 
   const handleMealSubmit = async (event) => {
@@ -140,6 +148,9 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
         await uploadMealImage(targetMealId, mealForm.imageFile);
       }
       setMealForm(emptyMealForm);
+      if (mealImageInputRef.current) {
+        mealImageInputRef.current.value = '';
+      }
       await refreshData();
     } catch (err) {
       setError(err.message || 'Failed to save meal.');
@@ -161,6 +172,9 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
         .map((ingredient) => `${ingredient.ingredientId}:${ingredient.weight_g}`)
         .join(', '),
     });
+    if (mealImageInputRef.current) {
+      mealImageInputRef.current.value = '';
+    }
   };
 
   const handleDeleteMeal = async (mealId) => {
@@ -266,6 +280,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
               <label className="staff-file-field">
                 <span>Upload image</span>
                 <input
+                  ref={mealImageInputRef}
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleMealImageChange(e.target.files?.[0])}
@@ -277,7 +292,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
                   <button
                     type="button"
                     className="staff-clear-image"
-                    onClick={() => setMealForm((current) => ({ ...current, imageUrl: '' }))}
+                    onClick={clearMealImage}
                   >
                     Clear image
                   </button>
