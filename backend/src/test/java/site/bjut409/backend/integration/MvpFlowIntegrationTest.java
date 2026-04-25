@@ -14,6 +14,7 @@ import site.bjut409.backend.auth.TokenStore;
 import site.bjut409.backend.service.DemoDataService;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -290,7 +291,7 @@ class MvpFlowIntegrationTest {
         String createPayload = """
                 {
                   "userId":1,
-                  "recommendationRequestId":"req-20260424-0001",
+                  "recommendationRequestId":"req-test-orders-0001",
                   "items":[
                     {"mealId":1,"quantity":2},
                     {"mealId":2,"quantity":1}
@@ -392,7 +393,7 @@ class MvpFlowIntegrationTest {
 
         String filteredBody = mockMvc.perform(get("/ingredients")
                         .param("keyword", "Chick")
-                        .param("expiryBefore", "2026-05-02")
+                        .param("expiryBefore", LocalDate.now().plusDays(7).toString())
                         .header("Authorization", "Bearer " + staffToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -434,7 +435,7 @@ class MvpFlowIntegrationTest {
         assertTrue(upload.get("imageUrl").asText().startsWith("/uploads/meals/"));
 
         String mealBody = mockMvc.perform(get("/meals/1")
-                        .param("recommendationRequestId", "req-20260424-0002")
+                        .param("recommendationRequestId", "req-test-dashboard-0002")
                         .param("recommendationRankPosition", "3")
                         .header("Authorization", "Bearer " + customerToken))
                 .andExpect(status().isOk())
@@ -445,7 +446,7 @@ class MvpFlowIntegrationTest {
         String createPayload = """
                 {
                   "userId":1,
-                  "recommendationRequestId":"req-20260424-0002",
+                  "recommendationRequestId":"req-test-dashboard-0002",
                   "items":[
                     {"mealId":1,"quantity":1}
                   ]
@@ -475,17 +476,19 @@ class MvpFlowIntegrationTest {
         assertTrue(dashboard.has("mealSustainabilityStats"));
         assertTrue(dashboard.has("lowCarbonSelectionCount"));
 
+        LocalDate reportFrom = LocalDate.now().minusDays(29);
+        LocalDate reportTo = LocalDate.now();
         String reportBody = mockMvc.perform(get("/reports/sustainability")
-                        .param("from", "2026-04-01")
-                        .param("to", "2026-04-24")
+                        .param("from", reportFrom.toString())
+                        .param("to", reportTo.toString())
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         JsonNode report = objectMapper.readTree(reportBody).get("data");
         assertTrue(report.has("reportId"));
         assertTrue(report.has("generatedAt"));
-        assertEquals("2026-04-01", report.get("rangeStart").asText());
-        assertEquals("2026-04-24", report.get("rangeEnd").asText());
+        assertEquals(reportFrom.toString(), report.get("rangeStart").asText());
+        assertEquals(reportTo.toString(), report.get("rangeEnd").asText());
         assertTrue(report.has("topMeals"));
         assertTrue(report.has("topRecommendedMeals"));
         assertTrue(report.has("topSelectedMeals"));
@@ -538,9 +541,11 @@ class MvpFlowIntegrationTest {
                         .header("Authorization", "Bearer " + customerToken))
                 .andExpect(status().isOk());
 
+        LocalDate reportFrom = LocalDate.now().minusDays(29);
+        LocalDate reportTo = LocalDate.now();
         String analyticsBody = mockMvc.perform(get("/reports/recommendations/analytics")
-                        .param("from", "2026-04-01")
-                        .param("to", "2026-04-24")
+                        .param("from", reportFrom.toString())
+                        .param("to", reportTo.toString())
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -554,8 +559,8 @@ class MvpFlowIntegrationTest {
         assertTrue(analytics.get("positionPerformance").isArray());
 
         String reportBody = mockMvc.perform(get("/reports/sustainability")
-                        .param("from", "2026-04-01")
-                        .param("to", "2026-04-24")
+                        .param("from", reportFrom.toString())
+                        .param("to", reportTo.toString())
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -614,9 +619,9 @@ class MvpFlowIntegrationTest {
         String stockPayload = """
                 {
                   "currentQty_g":5000,
-                  "expiryDate":"2026-03-20"
+                  "expiryDate":"%s"
                 }
-                """;
+                """.formatted(LocalDate.now().plusDays(30));
         mockMvc.perform(put("/stock/1")
                         .header("Authorization", "Bearer " + staffToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -698,9 +703,9 @@ class MvpFlowIntegrationTest {
                 {
                   "name":"Broccoli New",
                   "currentQty_g":3000,
-                  "expiryDate":"2026-03-30"
+                  "expiryDate":"%s"
                 }
-                """;
+                """.formatted(LocalDate.now().plusDays(30));
         String ingredientBody = mockMvc.perform(post("/ingredients")
                         .header("Authorization", "Bearer " + staffToken)
                         .contentType(MediaType.APPLICATION_JSON)
