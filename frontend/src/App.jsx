@@ -3,7 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import 'premium-react-loaders/styles';
 import Dashboard from './views/Dashboard';
-import Assistant from './views/Assistant';
 import Home from './views/Home';
 import Login from './views/Login';
 import MealDetail from './views/MealDetail';
@@ -140,12 +139,6 @@ function App() {
               ) : (
                 <Register onRegisterSuccess={handleLogin} />
               )
-            }
-          />
-          <Route
-            path="/assistant"
-            element={
-              isAuthenticated ? <Assistant {...sharedProps} /> : <Navigate to="/login" replace />
             }
           />
           <Route
