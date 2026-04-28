@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -25,8 +23,39 @@ services:
     networks:
       - meal_network
 
+  backend:
+    build:
+      context: ./backend
+    container_name: meal_backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/meal_recommendation
+      SPRING_DATASOURCE_USERNAME: meal_user
+      SPRING_DATASOURCE_PASSWORD: meal_password
+      TZ: Asia/Shanghai
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - meal_network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: meal_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - meal_network
+
 volumes:
   meal_db_data:
+    driver: local
+  uploads_data:
     driver: local
 
 networks:
