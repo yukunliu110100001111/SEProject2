@@ -351,6 +351,65 @@ class MvpFlowIntegrationTest {
     }
 
     @Test
+    void custom_order_item_should_create_order_and_consume_ingredient_stock() throws Exception {
+        String customerToken = tokenOf("customer1", "123456");
+        String createPayload = """
+                {
+                  "userId":1,
+                  "items":[
+                    {
+                      "custom":true,
+                      "name":"Custom bowl",
+                      "quantity":1,
+                      "calories":241,
+                      "protein":35,
+                      "sustainabilityScore":8,
+                      "ingredients":[
+                        {"ingredientId":1,"name":"Chicken","weight_g":100},
+                        {"ingredientId":4,"name":"Tofu","weight_g":200}
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        String createBody = mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        long orderId = objectMapper.readTree(createBody).get("data").get("orderId").asLong();
+
+        String detailBody = mockMvc.perform(get("/orders/" + orderId)
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode item = objectMapper.readTree(detailBody).get("data").get("items").get(0);
+        assertTrue(item.get("custom").asBoolean());
+        assertEquals("Custom bowl", item.get("name").asText());
+        assertEquals(241, item.get("calories").asInt());
+        assertEquals(35, item.get("protein").asInt());
+        assertEquals(2, item.get("ingredients").size());
+
+        mockMvc.perform(post("/orders/" + orderId + "/confirm")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk());
+
+        String chickenBody = mockMvc.perform(get("/ingredients/1")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertEquals(7900, objectMapper.readTree(chickenBody).get("data").get("currentQty_g").asInt());
+
+        String tofuBody = mockMvc.perform(get("/ingredients/4")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertEquals(5000, objectMapper.readTree(tofuBody).get("data").get("currentQty_g").asInt());
+    }
+
+    @Test
     void ingredients_query_should_return_detail_and_paginated_list() throws Exception {
         String staffToken = tokenOf("staff1", "123456");
         String customerToken = tokenOf("customer1", "123456");
@@ -391,7 +450,11 @@ class MvpFlowIntegrationTest {
 
         mockMvc.perform(get("/ingredients")
                         .header("Authorization", "Bearer " + customerToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/ingredients/1")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk());
 
         String filteredBody = mockMvc.perform(get("/ingredients")
                         .param("keyword", "Chick")

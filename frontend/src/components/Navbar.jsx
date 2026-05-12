@@ -28,6 +28,11 @@ const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
           </Link>
         </li>
         <li>
+          <Link to="/customize" className={isActive('/customize')}>
+            Customize
+          </Link>
+        </li>
+        <li>
           <Link to="/profile" className={isActive('/profile')}>
             Profile
           </Link>

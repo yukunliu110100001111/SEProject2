@@ -566,19 +566,31 @@ public class AppService {
         orderMapper.insert(order);
 
         for (Map<String, Object> item : items) {
-            Long mealId = positiveLong(item == null ? null : item.get("mealId"), "Meal ID");
+            boolean custom = Boolean.TRUE.equals(item == null ? null : item.get("custom"));
             Integer quantity = positiveInt(item == null ? null : item.get("quantity"), "Quantity");
-            MealRecord meal = mealMapper.findById(mealId);
-            if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
-                throw new BizException(404, 404, "Meal not found");
-            }
             OrderItemRecord record = new OrderItemRecord();
             record.setOrderId(order.getOrderId());
-            record.setMealId(mealId);
             record.setQuantity(quantity);
+
+            if (custom) {
+                record.setMealNameSnapshot(customName(item));
+                record.setCaloriesSnapshot(asInt(item.get("calories"), 0));
+                record.setProteinSnapshot(asInt(item.get("protein"), 0));
+                record.setSustainabilityScoreSnapshot(asInt(item.get("sustainabilityScore"), null));
+                record.setImageUrlSnapshot((String) item.get("imageUrl"));
+                record.setCustomIngredientsJson(toJson(customIngredients(item)));
+            } else {
+                Long mealId = positiveLong(item == null ? null : item.get("mealId"), "Meal ID");
+                MealRecord meal = mealMapper.findById(mealId);
+                if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
+                    throw new BizException(404, 404, "Meal not found");
+                }
+                record.setMealId(mealId);
+            }
+
             orderItemMapper.insert(record);
-            if (recommendationRequestId != null && !recommendationRequestId.isBlank()) {
-                recommendationEventMapper.insert(recommendationRequestId, userId, mealId, "selected", null, order.getOrderId());
+            if (!custom && recommendationRequestId != null && !recommendationRequestId.isBlank()) {
+                recommendationEventMapper.insert(recommendationRequestId, userId, record.getMealId(), "selected", null, order.getOrderId());
             }
         }
 
@@ -607,10 +619,19 @@ public class AppService {
         Map<Long, Integer> totalNeed = new HashMap<>();
 
         for (OrderItemRecord item : items) {
-            List<MealIngredientRecord> mealIngredients = mealIngredientMapper.findByMealId(item.getMealId());
-            for (MealIngredientRecord mealIngredient : mealIngredients) {
-                int need = mealIngredient.getWeightG() * item.getQuantity();
-                totalNeed.merge(mealIngredient.getIngredientId(), need, Integer::sum);
+            if (item.getMealId() == null) {
+                for (Map<String, Object> customIngredient : parseJsonList(item.getCustomIngredientsJson())) {
+                    Long ingredientId = positiveLong(customIngredient.get("ingredientId"), "Ingredient ID");
+                    Integer weight = positiveInt(customIngredient.get("weight_g"), "Ingredient weight");
+                    int need = weight * item.getQuantity();
+                    totalNeed.merge(ingredientId, need, Integer::sum);
+                }
+            } else {
+                List<MealIngredientRecord> mealIngredients = mealIngredientMapper.findByMealId(item.getMealId());
+                for (MealIngredientRecord mealIngredient : mealIngredients) {
+                    int need = mealIngredient.getWeightG() * item.getQuantity();
+                    totalNeed.merge(mealIngredient.getIngredientId(), need, Integer::sum);
+                }
             }
         }
 
@@ -761,7 +782,7 @@ public class AppService {
     }
 
     public Map<String, Object> listIngredients(AuthUser actor, String keyword, LocalDate expiryBefore, Integer page, Integer size) {
-        authSupport.requireRole(actor, "staff", "admin");
+        authSupport.requireRole(actor, "customer", "staff", "admin");
         int safePage = normalizePage(page);
         int safeSize = normalizeSize(size);
         List<Map<String, Object>> all = ingredientMapper.findAll().stream()
@@ -772,7 +793,7 @@ public class AppService {
     }
 
     public Map<String, Object> ingredientDetail(AuthUser actor, Long ingredientId) {
-        authSupport.requireRole(actor, "staff", "admin");
+        authSupport.requireRole(actor, "customer", "staff", "admin");
         IngredientRecord ingredient = ingredientMapper.findById(ingredientId);
         if (ingredient == null) {
             throw new BizException(404, 404, "Ingredient not found");
@@ -1034,19 +1055,28 @@ public class AppService {
         int totalProtein = 0;
         for (OrderItemRecord item : orderItemMapper.findByOrderId(order.getOrderId())) {
             MealRecord meal = mealMapper.findById(item.getMealId());
-            int mealCalories = meal == null || meal.getCalories() == null ? 0 : meal.getCalories();
-            int mealProtein = meal == null || meal.getProtein() == null ? 0 : meal.getProtein();
+            int mealCalories = item.getCaloriesSnapshot() != null
+                    ? item.getCaloriesSnapshot()
+                    : meal == null || meal.getCalories() == null ? 0 : meal.getCalories();
+            int mealProtein = item.getProteinSnapshot() != null
+                    ? item.getProteinSnapshot()
+                    : meal == null || meal.getProtein() == null ? 0 : meal.getProtein();
             totalCalories += mealCalories * item.getQuantity();
             totalProtein += mealProtein * item.getQuantity();
 
             Map<String, Object> itemView = new LinkedHashMap<>();
+            itemView.put("itemId", item.getItemId());
             itemView.put("mealId", item.getMealId());
             itemView.put("quantity", item.getQuantity());
-            itemView.put("name", meal == null ? null : meal.getName());
-            itemView.put("calories", meal == null ? null : meal.getCalories());
-            itemView.put("protein", meal == null ? null : meal.getProtein());
-            itemView.put("sustainabilityScore", meal == null ? null : meal.getSustainabilityScore());
-            itemView.put("imageUrl", meal == null ? null : meal.getImageUrl());
+            itemView.put("custom", item.getMealId() == null);
+            itemView.put("name", item.getMealNameSnapshot() != null ? item.getMealNameSnapshot() : meal == null ? null : meal.getName());
+            itemView.put("calories", mealCalories);
+            itemView.put("protein", mealProtein);
+            itemView.put("sustainabilityScore", item.getSustainabilityScoreSnapshot() != null
+                    ? item.getSustainabilityScoreSnapshot()
+                    : meal == null ? null : meal.getSustainabilityScore());
+            itemView.put("imageUrl", item.getImageUrlSnapshot() != null ? item.getImageUrlSnapshot() : meal == null ? null : meal.getImageUrl());
+            itemView.put("ingredients", parseJsonList(item.getCustomIngredientsJson()));
             itemViews.add(itemView);
         }
 
@@ -1206,12 +1236,62 @@ public class AppService {
         }
     }
 
+    private List<Map<String, Object>> parseJsonList(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new BizException(500, 500, "Failed to parse order item");
+        }
+    }
+
     private String toJson(Map<String, Object> value) {
+        return toJson((Object) value);
+    }
+
+    private String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (Exception e) {
-            throw new BizException(500, 500, "Failed to serialize report");
+            throw new BizException(500, 500, "Failed to serialize data");
         }
+    }
+
+    private String customName(Map<String, Object> item) {
+        Object name = item == null ? null : item.get("name");
+        if (name == null || String.valueOf(name).isBlank()) {
+            return "Custom bowl";
+        }
+        return String.valueOf(name).trim();
+    }
+
+    private List<Map<String, Object>> customIngredients(Map<String, Object> item) {
+        Object value = item == null ? null : item.get("ingredients");
+        if (!(value instanceof List<?> rawList) || rawList.isEmpty()) {
+            throw new BizException(400, 400, "Custom order item must contain ingredients");
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object rawItem : rawList) {
+            if (!(rawItem instanceof Map<?, ?> rawMap)) {
+                throw new BizException(400, 400, "Custom ingredient is invalid");
+            }
+            Long ingredientId = positiveLong(rawMap.get("ingredientId"), "Ingredient ID");
+            Integer weight = positiveInt(rawMap.get("weight_g"), "Ingredient weight");
+            IngredientRecord ingredient = ingredientMapper.findById(ingredientId);
+            if (ingredient == null) {
+                throw new BizException(404, 404, "Ingredient not found");
+            }
+            Map<String, Object> normalized = new LinkedHashMap<>();
+            normalized.put("ingredientId", ingredientId);
+            normalized.put("name", rawMap.get("name") == null ? ingredient.getName() : String.valueOf(rawMap.get("name")));
+            normalized.put("weight_g", weight);
+            result.add(normalized);
+        }
+        return result;
     }
 
     private String buildReportSummary(LocalDateTime from, LocalDateTime to) {
