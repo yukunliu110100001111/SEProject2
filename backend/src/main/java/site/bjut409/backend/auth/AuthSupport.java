@@ -24,15 +24,15 @@ public class AuthSupport {
 
     public AuthUser requireUser(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new BizException(401, 401, "未登录");
+            throw new BizException(401, 401, "Not authenticated");
         }
         Long userId = tokenStore.getUserId(authorization.substring("Bearer ".length()));
         if (userId == null) {
-            throw new BizException(401, 401, "未登录");
+            throw new BizException(401, 401, "Not authenticated");
         }
         UserRecord user = userMapper.findById(userId);
         if (user == null) {
-            throw new BizException(401, 401, "未登录");
+            throw new BizException(401, 401, "Not authenticated");
         }
         return new AuthUser(user.getUserId(), user.getUsername(), user.getRole());
     }
@@ -43,7 +43,7 @@ public class AuthSupport {
                 return;
             }
         }
-        throw new BizException(403, 403, "无权限");
+        throw new BizException(403, 403, "Forbidden");
     }
 
     public void requireSelfOrRole(AuthUser user, Long targetUserId, String... roles) {

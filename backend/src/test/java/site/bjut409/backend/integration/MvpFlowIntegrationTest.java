@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import site.bjut409.backend.auth.TokenStore;
 import site.bjut409.backend.service.DemoDataService;
 
@@ -27,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class MvpFlowIntegrationTest {
 
     @Autowired
@@ -434,6 +436,17 @@ class MvpFlowIntegrationTest {
         assertEquals(1, upload.get("mealId").asInt());
         assertTrue(upload.get("imageUrl").asText().startsWith("/uploads/meals/"));
 
+        MockMultipartFile largerPng = new MockMultipartFile(
+                "file",
+                "larger-cover.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[2 * 1024 * 1024]
+        );
+        mockMvc.perform(multipart("/meals/1/image")
+                        .file(largerPng)
+                        .header("Authorization", "Bearer " + staffToken))
+                .andExpect(status().isOk());
+
         String mealBody = mockMvc.perform(get("/meals/1")
                         .param("recommendationRequestId", "req-test-dashboard-0002")
                         .param("recommendationRankPosition", "3")
@@ -755,6 +768,77 @@ class MvpFlowIntegrationTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         JsonNode root = objectMapper.readTree(body);
         assertTrue(root.get("data").get("generatedAt").asText().length() > 0);
+    }
+
+    @Test
+    void invalid_order_quantities_should_be_rejected() throws Exception {
+        String customerToken = tokenOf("customer1", "123456");
+
+        mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": 1,
+                                  "items": [{"mealId": 1, "quantity": -1}]
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": 1,
+                                  "items": []
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void invalid_meal_and_stock_values_should_be_rejected() throws Exception {
+        String staffToken = tokenOf("staff1", "123456");
+
+        mockMvc.perform(post("/meals")
+                        .header("Authorization", "Bearer " + staffToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Invalid Meal",
+                                  "description": "Bad nutrition values",
+                                  "calories": -10,
+                                  "protein": 0,
+                                  "sustainabilityScore": 11,
+                                  "tags": [],
+                                  "ingredients": []
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/ingredients")
+                        .header("Authorization", "Bearer " + staffToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Invalid Ingredient",
+                                  "currentQty_g": -1,
+                                  "expiryDate": "2030-01-01"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/stock/1")
+                        .header("Authorization", "Bearer " + staffToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "currentQty_g": -1,
+                                  "expiryDate": "2030-01-01"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     private String tokenOf(String username, String password) throws Exception {

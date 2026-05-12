@@ -32,5 +32,11 @@ replay_pid*
 target/
 backend/target/
 
+# Runtime uploads
+backend/uploads/
+
+# Keep Maven Wrapper reproducible even though generic jar files are ignored.
+!backend/.mvn/wrapper/maven-wrapper.jar
+
 # MacOS trash
 .DS_Store

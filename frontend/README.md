@@ -152,7 +152,7 @@ npm run preview
 # lint
 npm run lint
 ```
-简单来说 运行docker，然后运行后端，然后执行
+In short: run Docker, start the backend, then run:
 cd /Users/zhangzekai/SEProject2/frontend
 npm install
 npm run dev

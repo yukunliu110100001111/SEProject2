@@ -70,15 +70,21 @@ public interface DashboardMapper {
 
     @Select("""
             select i.ingredient_id as ingredientId, i.name as name,
-                   coalesce(sr.current_qty_g,0) as currentQty,
-                   sr.expiry_date as expiryDate
+                   coalesce((
+                     select s.current_qty_g
+                     from stock_records s
+                     where s.ingredient_id = i.ingredient_id
+                     order by s.stock_id desc
+                     limit 1
+                   ), 0) as currentQty,
+                   (
+                     select s.expiry_date
+                     from stock_records s
+                     where s.ingredient_id = i.ingredient_id
+                     order by s.stock_id desc
+                     limit 1
+                   ) as expiryDate
             from ingredients i
-            left join lateral (
-              select s.current_qty_g, s.expiry_date
-              from stock_records s
-              where s.ingredient_id = i.ingredient_id
-              order by s.stock_id desc limit 1
-            ) sr on true
             order by i.ingredient_id
             """)
     List<Map<String, Object>> stockUsage();
@@ -102,12 +108,13 @@ public interface DashboardMapper {
                    sr.current_qty_g as currentQty_g,
                    sr.expiry_date as expiryDate
             from ingredients i
-            join lateral (
-              select s.current_qty_g, s.expiry_date
+            join stock_records sr on sr.stock_id = (
+              select s.stock_id
               from stock_records s
               where s.ingredient_id = i.ingredient_id
-              order by s.stock_id desc limit 1
-            ) sr on true
+              order by s.stock_id desc
+              limit 1
+            )
             where sr.current_qty_g >= 5000
             order by sr.current_qty_g desc, i.ingredient_id asc
             limit 10
@@ -119,12 +126,13 @@ public interface DashboardMapper {
                    sr.current_qty_g as currentQty_g,
                    sr.expiry_date as expiryDate
             from ingredients i
-            join lateral (
-              select s.current_qty_g, s.expiry_date
+            join stock_records sr on sr.stock_id = (
+              select s.stock_id
               from stock_records s
               where s.ingredient_id = i.ingredient_id
-              order by s.stock_id desc limit 1
-            ) sr on true
+              order by s.stock_id desc
+              limit 1
+            )
             where sr.current_qty_g > 0
               and sr.expiry_date between current_date and current_date + 7
             order by sr.expiry_date asc, i.ingredient_id asc

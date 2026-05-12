@@ -37,16 +37,16 @@ public class AiPendingActionService {
     public AiChatResponse confirm(AuthUser actor, String actionId) {
         PendingAction action = actions.remove(actionId);
         if (action == null) {
-            throw new BizException(404, 404, "待确认操作不存在或已失效");
+            throw new BizException(404, 404, "Pending action does not exist or has expired");
         }
         if (!actor.userId().equals(action.userId())) {
-            throw new BizException(403, 403, "不能确认其他用户的操作");
+            throw new BizException(403, 403, "You cannot confirm another user's action");
         }
 
         String reply = switch (action.actionType()) {
             case "update_preferences" -> confirmUpdatePreferences(actor, action.arguments());
             case "create_order" -> confirmCreateOrder(actor, action.arguments());
-            default -> throw new BizException(400, 400, "未知待确认操作: " + action.actionType());
+            default -> throw new BizException(400, 400, "Unknown pending action: " + action.actionType());
         };
         return new AiChatResponse(reply, "local-action", List.of(action.actionType()), null);
     }
@@ -65,16 +65,16 @@ public class AiPendingActionService {
                 stringList(preferences.get("allergens"), List.of()));
 
         appService.updatePreference(actor, actor.userId(), targetCalories, targetProtein, isVegetarian, allergens);
-        return "已按确认内容更新你的饮食偏好。";
+        return "Your dietary preferences have been updated.";
     }
 
     private String confirmCreateOrder(AuthUser actor, Map<String, Object> arguments) {
         List<Map<String, Object>> items = castList(arguments.get("items"));
         if (items.isEmpty()) {
-            throw new BizException(400, 400, "创建订单缺少 items");
+            throw new BizException(400, 400, "Order creation requires items");
         }
         Map<String, Object> result = appService.createOrder(actor, actor.userId(), items);
-        return "订单已创建，订单号是 %s，当前状态为 %s。"
+        return "Order %s has been created. Current status: %s."
                 .formatted(result.get("orderId"), result.get("status"));
     }
 

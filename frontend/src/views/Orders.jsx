@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { cancelOrder, confirmOrder, getOrders } from '../api/app';
 import Navbar from '../components/Navbar';
@@ -17,7 +17,7 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -28,11 +28,11 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [auth.userId]);
 
   useEffect(() => {
     loadOrders();
-  }, [auth.userId]);
+  }, [loadOrders]);
 
   const handleStatusChange = async (orderId, action) => {
     setBusyId(orderId);

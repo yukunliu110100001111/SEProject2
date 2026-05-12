@@ -55,7 +55,7 @@
   padding-left: 15px;
 }
 
-/* 成就卡片样式 */
+
 .stats-mini-grid {
   display: flex;
   flex-direction: column;
@@ -103,7 +103,7 @@
   text-align: center;
 }
 
-/* 表单与交互样式 */
+
 .pref-form {
   display: flex;
   flex-direction: column;

@@ -32,6 +32,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/meal_recommendation
       SPRING_DATASOURCE_USERNAME: meal_user
       SPRING_DATASOURCE_PASSWORD: meal_password
+      AI_ARK_API_KEY: ${AI_ARK_API_KEY:-}
+      AI_ARK_MODEL: ${AI_ARK_MODEL:-doubao-seed-2-0-pro-260215}
+      AI_ARK_BASE_URL: ${AI_ARK_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}
       TZ: Asia/Shanghai
     depends_on:
       postgres:

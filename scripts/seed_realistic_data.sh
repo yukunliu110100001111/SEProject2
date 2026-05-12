@@ -81,7 +81,10 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO sustainability_tags(tag_name, score_weight)
-VALUES ('eco-packaging', 1)
+VALUES
+('eco-packaging', 1),
+('low-carbon', 1),
+('plant-based', 1)
 ON CONFLICT (tag_name) DO NOTHING;
 
 INSERT INTO meal_sustainability_tags(meal_id, tag_id)

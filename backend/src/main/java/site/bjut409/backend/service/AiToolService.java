@@ -43,7 +43,7 @@ public class AiToolService {
             case "get_meal_detail" -> getMealDetail(actor, arguments);
             case "get_inventory_summary" -> getInventorySummary(actor);
             case "get_order_status" -> getOrderStatus(actor, arguments);
-            default -> throw new BizException(400, 400, "未知 AI 工具: " + toolName);
+            default -> throw new BizException(400, 400, "Unknown AI tool: " + toolName);
         };
     }
 
@@ -104,7 +104,7 @@ public class AiToolService {
         Long orderId = requiredLong(arguments, "orderId");
         OrderRecord order = orderMapper.findById(orderId);
         if (order == null) {
-            throw new BizException(404, 404, "订单不存在");
+            throw new BizException(404, 404, "Order not found");
         }
         authSupport.requireSelfOrRole(actor, order.getUserId(), "admin", "staff");
 
@@ -125,7 +125,7 @@ public class AiToolService {
 
     private Long requiredLong(JsonNode arguments, String field) {
         if (arguments == null || arguments.get(field) == null || arguments.get(field).isNull()) {
-            throw new BizException(400, 400, "AI 工具参数缺失: " + field);
+            throw new BizException(400, 400, "Missing AI tool parameter: " + field);
         }
         return arguments.get(field).asLong();
     }

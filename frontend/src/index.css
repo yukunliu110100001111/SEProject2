@@ -1,4 +1,4 @@
-/* 全局盒模型重置 */
+/* Global box model reset */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -8,9 +8,9 @@
 body, html, #root {
   width: 100%;
   height: 100%;
-  /* 禁止系统默认的弹性滚动，确保我们的动态背景稳定 */
+  /* Disable native elastic scrolling so animated backgrounds stay stable */
   overscroll-behavior-y: none;
-  background-color: #f3fdf9; /* 预设一个符合主题的底色 */
+  background-color: #f3fdf9; /* Theme-aligned fallback background */
 }
 
 body {
@@ -21,19 +21,19 @@ body {
   color: #1b4332;
 }
 
-/* 移除所有链接的默认样式 */
+/* Remove default link styling */
 a {
   text-decoration: none;
   color: inherit;
 }
 
-/* 统一按钮手势 */
+/* Normalize button cursor behavior */
 button {
   cursor: pointer;
   font-family: inherit;
 }
 
-/* 让图片响应式 */
+/* Keep images responsive */
 img {
   max-width: 100%;
   display: block;

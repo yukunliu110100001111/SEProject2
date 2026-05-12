@@ -1,4 +1,4 @@
-/* 固定在顶部的磨砂玻璃导航栏 */
+/* Fixed frosted-glass top navigation */
 .top-navbar {
   position: fixed;
   top: 0;
@@ -53,7 +53,7 @@
   color: #2d6a4f;
 }
 
-/* 激活状态的小横条 */
+/* Active-state underline */
 .nav-links li a.active-link:not(.admin-link)::after {
   content: '';
   position: absolute;

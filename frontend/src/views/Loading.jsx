@@ -15,11 +15,11 @@ const EXIT_DELAY_MS = 900;
 const Loading = ({ auth, onConsumeTarget }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const startedAtRef = useRef(Date.now());
+  const startedAtRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const [displayProgress, setDisplayProgress] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
   const [showFinalizing, setShowFinalizing] = useState(false);
+  const isComplete = progress >= 100;
   const burgerStops = useMemo(
     () =>
       Array.from({ length: 7 }, (_, index) => ({
@@ -71,15 +71,6 @@ const Loading = ({ auth, onConsumeTarget }) => {
 
     return () => window.clearInterval(timer);
   }, [isComplete]);
-
-  useEffect(() => {
-    if (progress < 100 || isComplete) {
-      return undefined;
-    }
-
-    setIsComplete(true);
-    return undefined;
-  }, [isComplete, progress]);
 
   useEffect(() => {
     let frameId;

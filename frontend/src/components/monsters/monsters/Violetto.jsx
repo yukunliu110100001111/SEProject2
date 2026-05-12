@@ -6,7 +6,6 @@ export function Violetto({ cursorX, cursorY, isFormFocused = false, isPasswordVi
   const bodyX = 135;
   const bodyY = 20;
   const bodyWidth = 165;
-  const bodyHeight = 340;
   const headCenterX = bodyX + bodyWidth / 2;
   const headCenterY = bodyY + 40;
   const faceCenterX = headCenterX;
