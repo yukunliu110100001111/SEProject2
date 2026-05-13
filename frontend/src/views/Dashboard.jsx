@@ -3,6 +3,8 @@ import { getDashboard, getSustainabilityReport } from '../api/app';
 import Navbar from '../components/Navbar';
 import './Dashboard.css';
 
+const getMealOrderCount = (meal) => meal.orders ?? meal.orderCount ?? meal.count ?? 0;
+
 const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [data, setData] = useState(null);
   const [report, setReport] = useState(null);
@@ -86,7 +88,7 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
                   <span className="rank-number">0{index + 1}</span>
                   <div className="rank-info">
                     <div className="rank-name">{meal.name}</div>
-                    <div className="rank-count">{meal.orders ?? meal.orderCount ?? 0} orders</div>
+                    <div className="rank-count">{getMealOrderCount(meal)} orders</div>
                   </div>
                 </div>
               ))}
