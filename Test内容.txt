@@ -1,0 +1,126 @@
+
+===========================================
+        GreenBite 项目测试类汇总
+===========================================
+
+共创建了 5 个测试类，包含 44 个测试用例
+
+
+一、PasswordHasherTest（密码哈希服务测试）
+-------------------------------------------
+文件路径: backend/src/test/java/site/bjut409/backend/service/PasswordHasherTest.java
+测试用例数: 17
+
+1. hash_should_not_return_null_or_empty      - 验证哈希结果不为空
+2. hash_should_start_with_prefix              - 验证哈希值以 "pbkdf2$" 开头
+3. hash_should_throw_exception_for_null_password        - 验证空密码抛出异常
+4. hash_should_throw_exception_for_empty_password       - 验证空字符串密码抛出异常
+5. hash_should_throw_exception_for_blank_password       - 验证空白密码抛出异常
+6. verify_should_return_true_for_correct_password       - 验证正确密码返回 true
+7. verify_should_return_false_for_wrong_password        - 验证错误密码返回 false
+8. verify_should_return_false_for_null_password         - 验证空密码返回 false
+9. verify_should_return_false_for_null_stored_value     - 验证空存储值返回 false
+10. verify_should_return_false_for_empty_stored_value   - 验证空字符串存储值返回 false
+11. verify_should_return_false_for_invalid_format       - 验证无效格式返回 false
+12. verify_should_support_plain_text_fallback           - 验证支持明文密码回退
+13. needsRehash_should_return_true_for_null_stored_value     - 验证空值需要重新哈希
+14. needsRehash_should_return_true_for_plain_text            - 验证明文密码需要重新哈希
+15. needsRehash_should_return_true_for_invalid_format        - 验证无效格式需要重新哈希
+16. needsRehash_should_return_false_for_valid_hash           - 验证有效哈希不需要重新哈希
+17. hash_should_produce_different_results_for_same_password  - 验证相同密码产生不同哈希值
+
+
+二、StockStatusHelperTest（库存状态辅助测试）
+---------------------------------------------
+文件路径: backend/src/test/java/site/bjut409/backend/service/StockStatusHelperTest.java
+测试用例数: 13
+
+1. calcStatus_should_return_high_stock_when_quantity_5000_or_more    - 验证数量 >= 5000 返回 high_stock
+2. calcStatus_should_return_high_stock_even_when_near_expiry         - 验证高库存优先于即将过期
+3. calcStatus_should_return_near_expiry_when_expiry_in_7_days_or_less - 验证过期日期在7天内返回 near_expiry
+4. calcStatus_should_return_normal_when_expiry_more_than_7_days      - 验证过期日期超过7天返回 normal
+5. calcStatus_should_return_normal_when_expiry_is_past               - 验证过期日期已过返回 normal
+6. calcStatus_should_return_normal_when_expiry_is_null               - 验证空过期日期返回 normal
+7. calcStatus_should_return_normal_when_quantity_is_null             - 验证空数量返回 normal
+8. calcStatus_should_return_near_expiry_when_quantity_null_and_expiry_near - 验证数量为空但即将过期
+9. calcStatus_should_not_return_high_stock_when_quantity_4999        - 验证数量 4999 返回 normal
+10. calcStatus_should_not_return_near_expiry_when_expiry_in_8_days   - 验证过期日期8天后返回 normal
+11. calcStatus_should_handle_zero_quantity                           - 验证零数量处理
+12. calcStatus_should_handle_negative_quantity                       - 验证负数量处理
+13. calcStatus_should_prefer_high_stock_over_near_expiry             - 验证高库存优先级高于过期状态
+
+
+三、ApiResponseTest（API响应封装测试）
+--------------------------------------
+文件路径: backend/src/test/java/site/bjut409/backend/common/ApiResponseTest.java
+测试用例数: 5
+
+1. success_with_data_should_create_correct_response      - 验证带数据的成功响应
+2. success_with_null_data_should_work                    - 验证空数据成功响应
+3. success_without_data_should_create_correct_response   - 验证无数据成功响应
+4. fail_should_create_correct_response                   - 验证失败响应
+5. fail_with_404_code_should_work                        - 验证404错误响应
+
+
+四、HealthControllerTest（健康检查控制器测试）
+---------------------------------------------
+文件路径: backend/src/test/java/site/bjut409/backend/controller/HealthControllerTest.java
+测试用例数: 2
+
+1. health_should_return_success_status       - 验证健康检查返回成功状态码
+2. health_should_return_status_ok_in_data    - 验证健康检查返回 ok 状态
+
+
+五、TokenStoreTest（令牌存储测试）
+----------------------------------
+文件路径: backend/src/test/java/site/bjut409/backend/auth/TokenStoreTest.java
+测试用例数: 7
+
+1. issue_should_return_token_starting_with_prefix         - 验证令牌以 "token-" 开头
+2. issue_should_return_different_tokens_each_time         - 验证每次产生不同令牌
+3. getUserId_should_return_user_id_for_valid_token        - 验证有效令牌返回用户ID
+4. getUserId_should_return_null_for_null_token           - 验证空令牌返回 null
+5. getUserId_should_return_null_for_token_without_prefix - 验证无前缀令牌返回 null
+6. getUserId_should_return_null_for_non_existent_token   - 验证不存在的令牌返回 null
+7. clear_should_remove_all_tokens                         - 验证清除所有令牌
+
+
+===========================================
+              测试运行方式
+===========================================
+
+在 backend 目录下执行:
+
+    .\mvnw.cmd test
+
+或运行指定测试类:
+
+    .\mvnw.cmd test -Dtest=PasswordHasherTest,StockStatusHelperTest
+
+
+===========================================
+              预期测试结果
+===========================================
+
+所有 76 个测试用例全部通过（包括原有的集成测试）:
+
+[INFO] Tests run: 76, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+
+===========================================
+              测试覆盖范围
+===========================================
+
+测试类别          覆盖模块
+-----------      -----------
+单元测试          PasswordHasher, StockStatusHelper, ApiResponse, TokenStore
+集成测试          HealthController
+业务流程测试      MvpFlowIntegrationTest（原有）
+
+测试覆盖的核心功能:
+- 密码安全（哈希、验证、重哈希）
+- 库存状态管理（高库存、过期预警）
+- API 响应标准化
+- 健康检查端点
+- 用户认证令牌管理
