@@ -59,9 +59,8 @@ public interface DashboardMapper {
             join order_items oi on oi.meal_id = m.meal_id
             join orders o on o.order_id = oi.order_id
             where m.is_deleted = false
-              and o.status = 'confirmed'
-              and o.confirmed_at >= #{from}
-              and o.confirmed_at < #{to}
+              and o.created_at >= #{from}
+              and o.created_at < #{to}
             group by m.meal_id, m.name
             order by count desc, m.meal_id asc
             limit 5

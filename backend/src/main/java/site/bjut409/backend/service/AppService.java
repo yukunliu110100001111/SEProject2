@@ -750,11 +750,11 @@ public class AppService {
 
     private Map<String, Object> buildDashboardData(LocalDateTime from, LocalDateTime to) {
         Map<String, Object> data = new LinkedHashMap<>();
-        List<Map<String, Object>> topMeals = dashboardMapper.topMeals(from, to);
-        List<Map<String, Object>> topRecommendedMeals = dashboardMapper.topRecommendedMeals(from, to);
-        List<Map<String, Object>> topSelectedMeals = dashboardMapper.topSelectedMeals(from, to);
-        List<Map<String, Object>> topClickedMeals = dashboardMapper.topClickedMeals(from, to);
-        data.put("topMeals", topSelectedMeals.isEmpty() ? topMeals : topSelectedMeals);
+        List<Map<String, Object>> topMeals = mapMealCountRows(dashboardMapper.topMeals(from, to));
+        List<Map<String, Object>> topRecommendedMeals = mapMealCountRows(dashboardMapper.topRecommendedMeals(from, to));
+        List<Map<String, Object>> topSelectedMeals = mapMealCountRows(dashboardMapper.topSelectedMeals(from, to));
+        List<Map<String, Object>> topClickedMeals = mapMealCountRows(dashboardMapper.topClickedMeals(from, to));
+        data.put("topMeals", topMeals);
         data.put("topRecommendedMeals", topRecommendedMeals);
         data.put("topSelectedMeals", topSelectedMeals);
         data.put("topClickedMeals", topClickedMeals);
@@ -1179,11 +1179,21 @@ public class AppService {
         data.put("clickThroughRate", ratio(clicks, exposures));
         data.put("selectionRate", ratio(selected, exposures));
         data.put("clickToSelectionRate", ratio(selected, clicks));
-        data.put("topRecommendedMeals", dashboardMapper.topRecommendedMeals(from, to));
-        data.put("topClickedMeals", dashboardMapper.topClickedMeals(from, to));
-        data.put("topSelectedMeals", dashboardMapper.topSelectedMeals(from, to));
+        data.put("topRecommendedMeals", mapMealCountRows(dashboardMapper.topRecommendedMeals(from, to)));
+        data.put("topClickedMeals", mapMealCountRows(dashboardMapper.topClickedMeals(from, to)));
+        data.put("topSelectedMeals", mapMealCountRows(dashboardMapper.topSelectedMeals(from, to)));
         data.put("positionPerformance", mapPositionStats(dashboardMapper.recommendationPositionStats(from, to)));
         return data;
+    }
+
+    private List<Map<String, Object>> mapMealCountRows(List<Map<String, Object>> rows) {
+        return rows.stream().map(row -> {
+            Map<String, Object> mapped = new LinkedHashMap<>();
+            mapped.put("mealId", asLong(row.get("mealid"), asLong(row.get("mealId"), 0L)));
+            mapped.put("name", row.get("name"));
+            mapped.put("count", asLong(row.get("count"), 0L));
+            return mapped;
+        }).toList();
     }
 
     private List<Map<String, Object>> mapPositionStats(List<Map<String, Object>> rows) {

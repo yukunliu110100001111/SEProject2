@@ -293,6 +293,33 @@ class BackendComprehensiveIntegrationTest {
     }
 
     @Test
+    void dashboard_top_meals_should_count_placed_order_quantities_before_confirmation() throws Exception {
+        String customerToken = tokenOf("customer1", "123456");
+        String adminToken = tokenOf("admin1", "123456");
+
+        mockMvc.perform(post("/orders")
+                        .header("Authorization", bearer(customerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId":1,
+                                  "items":[{"mealId":1,"quantity":3}]
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        String dashboardBody = mockMvc.perform(get("/dashboard")
+                        .header("Authorization", bearer(adminToken)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode topMeals = objectMapper.readTree(dashboardBody).get("data").get("topMeals");
+
+        assertTrue(topMeals.isArray());
+        assertEquals(1, topMeals.get(0).get("mealId").asInt());
+        assertEquals(3, topMeals.get(0).get("count").asInt());
+    }
+
+    @Test
     void stock_and_report_inputs_should_be_validated() throws Exception {
         String staffToken = tokenOf("staff1", "123456");
         String adminToken = tokenOf("admin1", "123456");
