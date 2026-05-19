@@ -7,6 +7,15 @@ import { saveSession } from '../utils/storage';
 import { pickAuthBubbleMeals } from '../utils/authBubbleMeals';
 import './Login.css';
 
+const passwordComplexityMessage =
+  'Password must be at least 8 characters and include uppercase, lowercase, and a number.';
+
+const isPasswordStrong = (password) =>
+  password.length >= 8 &&
+  /[a-z]/.test(password) &&
+  /[A-Z]/.test(password) &&
+  /\d/.test(password);
+
 const Register = ({ onRegisterSuccess }) => {
   const [form, setForm] = useState({
     username: '',
@@ -36,6 +45,11 @@ const Register = ({ onRegisterSuccess }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!isPasswordStrong(form.password)) {
+      setError(passwordComplexityMessage);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -120,6 +134,7 @@ const Register = ({ onRegisterSuccess }) => {
                   }
                 }}
               />
+              <span className="password-hint">{passwordComplexityMessage}</span>
             </div>
             {error && <p className="login-error">{error}</p>}
             <button type="submit" disabled={loading}>

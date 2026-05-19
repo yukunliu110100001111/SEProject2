@@ -24,18 +24,20 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
   const [orders, setOrders] = useState([]);
 
   const achievements = useMemo(() => {
-    return orders.reduce(
-      (sum, order) => ({
-        orderCount: sum.orderCount + 1,
-        totalCalories: sum.totalCalories + Number(order.totalCalories || 0),
-        totalProtein: sum.totalProtein + Number(order.totalProtein || 0),
-      }),
-      {
-        orderCount: 0,
-        totalCalories: 0,
-        totalProtein: 0,
-      }
-    );
+    return orders
+      .filter((order) => order.status === 'confirmed')
+      .reduce(
+        (sum, order) => ({
+          orderCount: sum.orderCount + 1,
+          totalCalories: sum.totalCalories + Number(order.totalCalories || 0),
+          totalProtein: sum.totalProtein + Number(order.totalProtein || 0),
+        }),
+        {
+          orderCount: 0,
+          totalCalories: 0,
+          totalProtein: 0,
+        }
+      );
   }, [orders]);
 
   useEffect(() => {

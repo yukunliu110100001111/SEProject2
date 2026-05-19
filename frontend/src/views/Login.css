@@ -345,6 +345,14 @@
   background: rgba(229, 231, 235, 0.75);
 }
 
+.password-hint {
+  display: block;
+  margin-top: 9px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .login-card button[type='submit'] {
   position: relative;
   z-index: 1;

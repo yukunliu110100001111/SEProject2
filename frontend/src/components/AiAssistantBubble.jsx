@@ -146,6 +146,20 @@ const AiAssistantBubble = ({ auth }) => {
 
           if (event === 'error') {
             setError(data.message || 'AI assistant is temporarily unavailable.');
+            setMessages((current) =>
+              current.map((message, index) =>
+                index === streamIndex
+                  ? {
+                      ...message,
+                      content:
+                        message.content ||
+                        data.message ||
+                        'AI assistant is temporarily unavailable.',
+                      isStreaming: false,
+                    }
+                  : message
+              )
+            );
           }
         },
       });

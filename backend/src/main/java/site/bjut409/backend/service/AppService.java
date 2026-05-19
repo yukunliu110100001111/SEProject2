@@ -138,6 +138,7 @@ public class AppService {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
             throw new BizException(400, 400, "Invalid parameters");
         }
+        validatePasswordComplexity(password);
         if (userMapper.findByUsername(username) != null) {
             throw new BizException(409, 409, "Username already exists");
         }
@@ -1281,6 +1282,9 @@ public class AppService {
             }
             Long ingredientId = positiveLong(rawMap.get("ingredientId"), "Ingredient ID");
             Integer weight = positiveInt(rawMap.get("weight_g"), "Ingredient weight");
+            if (weight > 1000) {
+                throw new BizException(400, 400, "Ingredient weight must be at most 1000g");
+            }
             IngredientRecord ingredient = ingredientMapper.findById(ingredientId);
             if (ingredient == null) {
                 throw new BizException(404, 404, "Ingredient not found");
@@ -1308,6 +1312,16 @@ public class AppService {
         long days = Math.max(1, java.time.Duration.between(from, to).toDays());
         return "Over the past " + days + " days, the low-carbon meal selection rate was " + rate
                 + "%, and high-stock ingredients were mainly concentrated in " + focus + ".";
+    }
+
+    private void validatePasswordComplexity(String password) {
+        boolean hasLower = password.chars().anyMatch(Character::isLowerCase);
+        boolean hasUpper = password.chars().anyMatch(Character::isUpperCase);
+        boolean hasDigit = password.chars().anyMatch(Character::isDigit);
+        if (password.length() < 8 || !hasLower || !hasUpper || !hasDigit) {
+            throw new BizException(400, 400,
+                    "Password must be at least 8 characters and include uppercase, lowercase, and a number");
+        }
     }
 
     private double ratio(long numerator, long denominator) {

@@ -7,6 +7,8 @@ import { getIngredientVisual } from '../utils/ingredientVisuals';
 import './Customize.css';
 
 const DEFAULT_GRAMS = 100;
+const MIN_GRAMS = 10;
+const MAX_GRAMS = 1000;
 
 const nutritionProfiles = [
   { keys: ['chicken'], calories: 165, protein: 31, carbs: 0, fat: 3.6 },
@@ -215,7 +217,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
       if (existing) {
         return current.map((item) =>
           item.ingredientId === ingredient.ingredientId
-            ? { ...item, grams: item.grams + 50 }
+            ? { ...item, grams: Math.min(MAX_GRAMS, item.grams + 50) }
             : item
         );
       }
@@ -224,7 +226,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
   };
 
   const updateIngredientWeight = (ingredientId, grams) => {
-    const nextGrams = Math.max(10, Math.min(1000, Number(grams) || 10));
+    const nextGrams = Math.max(MIN_GRAMS, Math.min(MAX_GRAMS, Number(grams) || MIN_GRAMS));
     setSelectedIngredients((current) =>
       current.map((ingredient) =>
         ingredient.ingredientId === ingredientId
@@ -249,6 +251,10 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
     setSubmitError('');
 
     try {
+      if (selectedIngredients.some((ingredient) => ingredient.grams > MAX_GRAMS)) {
+        setSubmitError(`Each ingredient can be at most ${MAX_GRAMS}g.`);
+        return;
+      }
       const response = await createOrder({
         userId: Number(auth.userId),
         items: [
@@ -434,8 +440,8 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
                       </button>
                       <input
                         type="number"
-                        min="10"
-                        max="1000"
+                        min={MIN_GRAMS}
+                        max={MAX_GRAMS}
                         step="10"
                         value={ingredient.grams}
                         onChange={(event) =>

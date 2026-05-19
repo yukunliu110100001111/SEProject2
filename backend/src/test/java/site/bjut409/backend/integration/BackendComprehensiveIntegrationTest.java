@@ -75,7 +75,7 @@ class BackendComprehensiveIntegrationTest {
                         .content("""
                                 {
                                   "username":"customer1",
-                                  "password":"123456"
+                                  "password":"Strong123"
                                 }
                                 """),
                 409, 409);
@@ -91,7 +91,7 @@ class BackendComprehensiveIntegrationTest {
     @Test
     void customer_should_be_blocked_from_other_users_and_staff_or_admin_operations() throws Exception {
         String customerToken = tokenOf("customer1", "123456");
-        JsonNode secondCustomer = register("customer2", "123456");
+        JsonNode secondCustomer = register("customer2", "Strong123");
         long secondCustomerId = secondCustomer.get("userId").asLong();
 
         expectApiError(get("/users/" + secondCustomerId)
@@ -240,7 +240,7 @@ class BackendComprehensiveIntegrationTest {
     @Test
     void order_security_validation_and_status_conflicts_should_be_enforced() throws Exception {
         String customerToken = tokenOf("customer1", "123456");
-        JsonNode secondCustomer = register("customer2", "123456");
+        JsonNode secondCustomer = register("customer2", "Strong123");
         long secondCustomerId = secondCustomer.get("userId").asLong();
 
         expectApiError(post("/orders")

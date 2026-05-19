@@ -63,7 +63,7 @@ class MvpFlowIntegrationTest {
         String registerPayload = """
                 {
                   "username":"new_user",
-                  "password":"123456"
+                  "password":"Strong123"
                 }
                 """;
         mockMvc.perform(post("/auth/register")
@@ -80,7 +80,7 @@ class MvpFlowIntegrationTest {
         String loginPayload = """
                 {
                   "username":"new_user",
-                  "password":"123456"
+                  "password":"Strong123"
                 }
                 """;
         String loginBody = mockMvc.perform(post("/auth/login")
