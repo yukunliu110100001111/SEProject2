@@ -29,6 +29,9 @@ public class HttpArkChatClient implements ArkChatClient {
     @Value("${ai.ark.api-key}")
     private String apiKey;
 
+    @Value("${ai.ark.fallback-api-key:}")
+    private String fallbackApiKey;
+
     public HttpArkChatClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
@@ -38,8 +41,9 @@ public class HttpArkChatClient implements ArkChatClient {
 
     @Override
     public String chat(List<Map<String, String>> messages, String model) {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new BizException(503, 503, "AI 助手未配置，请设置 ARK_API_KEY");
+        String resolvedApiKey = resolvedApiKey();
+        if (resolvedApiKey.isBlank()) {
+            throw new BizException(503, 503, "AI assistant is not configured. Please set AI_ARK_API_KEY");
         }
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
@@ -51,13 +55,13 @@ public class HttpArkChatClient implements ArkChatClient {
                     .uri(URI.create(normalizeBaseUrl(baseUrl) + "/responses"))
                     .timeout(Duration.ofSeconds(60))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + resolvedApiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < HttpStatus.OK.value() || response.statusCode() >= 300) {
-                throw new BizException(502, 502, "方舟模型调用失败: " + response.body());
+                throw new BizException(502, 502, "Ark model request failed: " + response.body());
             }
 
             JsonNode root = objectMapper.readTree(response.body());
@@ -69,15 +73,22 @@ public class HttpArkChatClient implements ArkChatClient {
             JsonNode contentNode = root.path("output");
             String content = readContent(contentNode);
             if (content.isBlank()) {
-                throw new BizException(502, 502, "方舟模型返回空内容");
+                throw new BizException(502, 502, "Ark model returned empty content");
             }
             return content;
         } catch (IOException | InterruptedException ex) {
             if (ex instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            throw new BizException(502, 502, "方舟模型调用异常");
+            throw new BizException(502, 502, "Ark model request failed");
         }
+    }
+
+    private String resolvedApiKey() {
+        if (apiKey != null && !apiKey.isBlank()) {
+            return apiKey;
+        }
+        return fallbackApiKey == null ? "" : fallbackApiKey;
     }
 
     private List<Map<String, Object>> buildInput(List<Map<String, String>> messages) {

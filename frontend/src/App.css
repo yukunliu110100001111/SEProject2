@@ -1,4 +1,4 @@
-/* 现代浏览器基础重置 */
+
 *, *::before, *::after {
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
@@ -10,12 +10,12 @@ body, html, #root {
   padding: 0;
   width: 100%;
   height: 100%;
-  background-color: #f3fdf9; /* 全局淡绿底色 */
+  background-color: #f3fdf9; 
   color: #1b4332;
   font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
 
-/* 自定义滚动条 - 让页面更有质感 */
+
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -33,7 +33,7 @@ body, html, #root {
   background: #a5d6a7;
 }
 
-/* 统一 Loading 状态样式 */
+
 .loading-wrapper {
   height: 100vh;
   display: flex;

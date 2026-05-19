@@ -19,6 +19,8 @@ import site.bjut409.backend.model.UserPreferenceRecord;
 import site.bjut409.backend.model.UserRecord;
 
 import java.time.LocalDate;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ public class DemoDataService {
     private final MealIngredientMapper mealIngredientMapper;
     private final TagMapper tagMapper;
     private final JdbcTemplate jdbcTemplate;
+    private final PasswordHasher passwordHasher;
 
     public DemoDataService(UserMapper userMapper,
                            UserPreferenceMapper userPreferenceMapper,
@@ -42,7 +45,8 @@ public class DemoDataService {
                            MealMapper mealMapper,
                            MealIngredientMapper mealIngredientMapper,
                            TagMapper tagMapper,
-                           JdbcTemplate jdbcTemplate) {
+                           JdbcTemplate jdbcTemplate,
+                           PasswordHasher passwordHasher) {
         this.userMapper = userMapper;
         this.userPreferenceMapper = userPreferenceMapper;
         this.ingredientMapper = ingredientMapper;
@@ -51,6 +55,7 @@ public class DemoDataService {
         this.mealIngredientMapper = mealIngredientMapper;
         this.tagMapper = tagMapper;
         this.jdbcTemplate = jdbcTemplate;
+        this.passwordHasher = passwordHasher;
     }
 
     @PostConstruct
@@ -66,8 +71,57 @@ public class DemoDataService {
     @Transactional
     public void resetAll() {
         ensureSchemaCompatibility();
-        jdbcTemplate.execute("truncate table recommendation_events, sustainability_reports, order_items, orders, meal_sustainability_tags, sustainability_tags, stock_records, meal_ingredients, ingredient_allergens, meals, ingredients, user_allergies, allergens, user_preferences, users restart identity cascade");
+        if (isH2()) {
+            resetAllForH2();
+        } else {
+            jdbcTemplate.execute("truncate table auth_sessions, recommendation_events, sustainability_reports, order_items, orders, meal_sustainability_tags, sustainability_tags, stock_records, meal_ingredients, ingredient_allergens, meals, ingredients, user_allergies, allergens, user_preferences, users restart identity cascade");
+        }
         seedBaseData();
+    }
+
+    private boolean isH2() {
+        try (Connection connection = jdbcTemplate.getDataSource().getConnection()) {
+            return "H2".equalsIgnoreCase(connection.getMetaData().getDatabaseProductName());
+        } catch (SQLException ex) {
+            return false;
+        }
+    }
+
+    private void resetAllForH2() {
+        jdbcTemplate.execute("set referential_integrity false");
+        for (String table : List.of(
+                "auth_sessions",
+                "recommendation_events",
+                "sustainability_reports",
+                "order_items",
+                "orders",
+                "meal_sustainability_tags",
+                "sustainability_tags",
+                "stock_records",
+                "meal_ingredients",
+                "ingredient_allergens",
+                "meals",
+                "ingredients",
+                "user_allergies",
+                "allergens",
+                "user_preferences",
+                "users")) {
+            jdbcTemplate.execute("truncate table " + table);
+        }
+        for (String statement : List.of(
+                "alter table users alter column user_id restart with 1",
+                "alter table allergens alter column allergen_id restart with 1",
+                "alter table meals alter column meal_id restart with 1",
+                "alter table ingredients alter column ingredient_id restart with 1",
+                "alter table stock_records alter column stock_id restart with 1",
+                "alter table sustainability_tags alter column tag_id restart with 1",
+                "alter table orders alter column order_id restart with 1",
+                "alter table recommendation_events alter column event_id restart with 1",
+                "alter table auth_sessions alter column session_id restart with 1",
+                "alter table sustainability_reports alter column report_id restart with 1")) {
+            jdbcTemplate.execute(statement);
+        }
+        jdbcTemplate.execute("set referential_integrity true");
     }
 
     private void ensureSchemaCompatibility() {
@@ -75,11 +129,19 @@ public class DemoDataService {
         jdbcTemplate.execute("alter table if exists orders add column if not exists recommendation_request_id varchar(64)");
         jdbcTemplate.execute("alter table if exists orders add column if not exists confirmed_at timestamp");
         jdbcTemplate.execute("alter table if exists orders add column if not exists cancelled_at timestamp");
+        jdbcTemplate.execute("alter table if exists order_items add column if not exists item_id bigint generated by default as identity");
         jdbcTemplate.execute("alter table if exists order_items add column if not exists meal_name_snapshot varchar(150)");
         jdbcTemplate.execute("alter table if exists order_items add column if not exists calories_snapshot int");
         jdbcTemplate.execute("alter table if exists order_items add column if not exists protein_snapshot int");
         jdbcTemplate.execute("alter table if exists order_items add column if not exists sustainability_score_snapshot int");
         jdbcTemplate.execute("alter table if exists order_items add column if not exists image_url_snapshot varchar(500)");
+        jdbcTemplate.execute("alter table if exists order_items add column if not exists custom_ingredients_json text");
+        jdbcTemplate.execute("alter table if exists order_items drop constraint if exists order_items_pkey");
+        jdbcTemplate.execute("alter table if exists order_items alter column meal_id drop not null");
+        ensureOrderItemPrimaryKey();
+        if (!isH2()) {
+            ensurePostgresOrderItemSnapshotTrigger();
+        }
         jdbcTemplate.execute("""
                 create table if not exists recommendation_events (
                     event_id bigint generated by default as identity primary key,
@@ -90,6 +152,16 @@ public class DemoDataService {
                     rank_position int,
                     order_id bigint references orders(order_id) on delete restrict,
                     created_at timestamp not null default current_timestamp
+                )
+                """);
+        jdbcTemplate.execute("""
+                create table if not exists auth_sessions (
+                    session_id bigint generated by default as identity primary key,
+                    user_id bigint not null references users(user_id) on delete cascade,
+                    token_hash varchar(255) not null unique,
+                    issued_at timestamp not null default current_timestamp,
+                    expires_at timestamp not null,
+                    revoked_at timestamp
                 )
                 """);
         jdbcTemplate.execute("""
@@ -105,23 +177,77 @@ public class DemoDataService {
                 """);
     }
 
+    private void ensureOrderItemPrimaryKey() {
+        Integer count = jdbcTemplate.queryForObject("""
+                select count(*)
+                from information_schema.table_constraints
+                where table_name = 'order_items'
+                  and constraint_type = 'PRIMARY KEY'
+                """, Integer.class);
+        if (count == null || count == 0) {
+            jdbcTemplate.execute("alter table order_items add primary key (item_id)");
+        }
+    }
+
+    private void ensurePostgresOrderItemSnapshotTrigger() {
+        jdbcTemplate.execute("""
+                create or replace function trg_fill_order_item_snapshots()
+                returns trigger as $$
+                declare
+                    src_meal meals%rowtype;
+                begin
+                    if NEW.meal_id is null then
+                        return NEW;
+                    end if;
+
+                    select *
+                    into src_meal
+                    from meals
+                    where meal_id = NEW.meal_id;
+
+                    if src_meal.meal_id is null then
+                        raise exception 'meal % not found when filling order snapshot', NEW.meal_id;
+                    end if;
+
+                    NEW.meal_name_snapshot := coalesce(NEW.meal_name_snapshot, src_meal.name);
+                    NEW.calories_snapshot := coalesce(NEW.calories_snapshot, src_meal.calories);
+                    NEW.protein_snapshot := coalesce(NEW.protein_snapshot, src_meal.protein);
+                    NEW.sustainability_score_snapshot := coalesce(
+                        NEW.sustainability_score_snapshot,
+                        src_meal.sustainability_score
+                    );
+                    NEW.image_url_snapshot := coalesce(NEW.image_url_snapshot, src_meal.image_url);
+
+                    return NEW;
+                end;
+                $$ language plpgsql
+                """);
+        jdbcTemplate.execute("drop trigger if exists trg_order_items_fill_snapshots on order_items");
+        jdbcTemplate.execute("""
+                create trigger trg_order_items_fill_snapshots
+                before insert or update on order_items
+                for each row
+                execute function trg_fill_order_item_snapshots()
+                """);
+    }
+
     @Transactional
     public void seedBaseData() {
         UserRecord customer = new UserRecord();
         customer.setUsername("customer1");
-        customer.setPasswordHash("123456");
+        customer.setPasswordHash(passwordHasher.hash("123456"));
         customer.setRole("customer");
         userMapper.insert(customer);
 
         UserRecord staff = new UserRecord();
         staff.setUsername("staff1");
-        staff.setPasswordHash("123456");
+        staff.setPasswordHash(passwordHasher.hash("123456"));
         staff.setRole("staff");
         userMapper.insert(staff);
 
         UserRecord admin = new UserRecord();
         admin.setUsername("admin1");
-        admin.setPasswordHash("123456");
+        admin.setPasswordHash(passwordHasher.hash("123456"));
         admin.setRole("admin");
         userMapper.insert(admin);
 

@@ -1,4 +1,4 @@
-// 严格按照 API 4.1 和 4.2 的 Response.data 结构编写 [cite: 54-63, 66-81]
+
 export const mockMeals = [
   {
     mealId: 1,
@@ -19,7 +19,7 @@ export const mockMeals = [
     description: "100% plant-based energy bowl.",
     calories: 380,
     protein: 25,
-    sustainabilityScore: 10, // 满分环保！
+    sustainabilityScore: 10, 
     ingredients: [
       { ingredientId: 3, name: "Tofu", weight_g: 200 },
       { ingredientId: 4, name: "Quinoa", weight_g: 150 }

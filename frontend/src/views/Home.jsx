@@ -198,7 +198,7 @@ const Home = ({
               <div className="banner-glow banner-glow-left"></div>
               <div className="banner-glow banner-glow-right"></div>
             <div className="banner-category-row" aria-label="Meal categories">
-              {categories.map((category, index) => (
+              {categories.map((category) => (
                 <button
                   key={category}
                   type="button"

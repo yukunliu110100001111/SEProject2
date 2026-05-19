@@ -71,6 +71,7 @@ public class AppService {
     private final RecommendationEventMapper recommendationEventMapper;
     private final SustainabilityReportMapper sustainabilityReportMapper;
     private final AuthSupport authSupport;
+    private final PasswordHasher passwordHasher;
     private final StockStatusHelper stockStatusHelper;
     private final ObjectMapper objectMapper;
 
@@ -90,6 +91,7 @@ public class AppService {
                       RecommendationEventMapper recommendationEventMapper,
                       SustainabilityReportMapper sustainabilityReportMapper,
                       AuthSupport authSupport,
+                      PasswordHasher passwordHasher,
                       StockStatusHelper stockStatusHelper,
                       ObjectMapper objectMapper) {
         this.userMapper = userMapper;
@@ -108,14 +110,19 @@ public class AppService {
         this.recommendationEventMapper = recommendationEventMapper;
         this.sustainabilityReportMapper = sustainabilityReportMapper;
         this.authSupport = authSupport;
+        this.passwordHasher = passwordHasher;
         this.stockStatusHelper = stockStatusHelper;
         this.objectMapper = objectMapper;
     }
 
     public Map<String, Object> login(String username, String password) {
         UserRecord user = userMapper.findByUsername(username);
-        if (user == null || !Objects.equals(user.getPasswordHash(), password)) {
-            throw new BizException(401, 401, "用户名或密码错误");
+        if (user == null || !passwordHasher.verify(password, user.getPasswordHash())) {
+            throw new BizException(401, 401, "Invalid username or password");
+        }
+        if (passwordHasher.needsRehash(user.getPasswordHash())) {
+            user.setPasswordHash(passwordHasher.hash(password));
+            userMapper.updatePasswordHash(user);
         }
         String token = authSupport.issueToken(user.getUserId());
         Map<String, Object> data = new LinkedHashMap<>();
@@ -129,14 +136,14 @@ public class AppService {
     @Transactional
     public Map<String, Object> register(String username, String password) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            throw new BizException(400, 400, "参数错误");
+            throw new BizException(400, 400, "Invalid parameters");
         }
         if (userMapper.findByUsername(username) != null) {
-            throw new BizException(409, 409, "用户名已存在");
+            throw new BizException(409, 409, "Username already exists");
         }
         UserRecord user = new UserRecord();
         user.setUsername(username);
-        user.setPasswordHash(password);
+        user.setPasswordHash(passwordHasher.hash(password));
         user.setRole("customer");
         userMapper.insert(user);
 
@@ -159,7 +166,7 @@ public class AppService {
         authSupport.requireSelfOrRole(actor, userId, "admin", "staff");
         UserRecord user = userMapper.findById(userId);
         if (user == null) {
-            throw new BizException(404, 404, "用户不存在");
+            throw new BizException(404, 404, "User not found");
         }
         UserPreferenceRecord pref = userPreferenceMapper.findByUserId(userId);
 
@@ -183,15 +190,15 @@ public class AppService {
     public void updateUserProfile(AuthUser actor, Long userId, String username) {
         authSupport.requireSelfOrRole(actor, userId, "admin");
         if (username == null || username.isBlank()) {
-            throw new BizException(400, 400, "参数错误");
+            throw new BizException(400, 400, "Invalid parameters");
         }
         UserRecord current = userMapper.findById(userId);
         if (current == null) {
-            throw new BizException(404, 404, "用户不存在");
+            throw new BizException(404, 404, "User not found");
         }
         UserRecord existing = userMapper.findByUsername(username);
         if (existing != null && !Objects.equals(existing.getUserId(), userId)) {
-            throw new BizException(409, 409, "用户名已存在");
+            throw new BizException(409, 409, "Username already exists");
         }
         current.setUsername(username);
         userMapper.updateUsername(current);
@@ -201,6 +208,8 @@ public class AppService {
     public void updatePreference(AuthUser actor, Long userId, Integer calories, Integer protein, Boolean vegetarian,
                                  List<String> allergens) {
         authSupport.requireSelfOrRole(actor, userId, "admin");
+        validateOptionalPositive(calories, "Target calories");
+        validateOptionalPositive(protein, "Target protein");
         UserPreferenceRecord pref = userPreferenceMapper.findByUserId(userId);
         if (pref == null) {
             pref = new UserPreferenceRecord();
@@ -242,7 +251,7 @@ public class AppService {
         authSupport.requireRole(actor, "customer", "staff", "admin");
         MealRecord meal = mealMapper.findById(mealId);
         if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
-            throw new BizException(404, 404, "菜品不存在");
+            throw new BizException(404, 404, "Meal not found");
         }
         if (recommendationRequestId != null && !recommendationRequestId.isBlank()) {
             recommendationEventMapper.insert(recommendationRequestId, actor.userId(), mealId, "click", recommendationRankPosition, null);
@@ -276,25 +285,19 @@ public class AppService {
     public Map<String, Object> uploadMealImage(AuthUser actor, Long mealId, MultipartFile file) {
         authSupport.requireRole(actor, "staff", "admin");
         if (file == null || file.isEmpty()) {
-            throw new BizException(400, 400, "文件为空");
+            throw new BizException(400, 400, "File is empty");
         }
-        String contentType = file.getContentType();
-        if (!List.of("image/jpeg", "image/png", "image/webp").contains(contentType)) {
-            throw new BizException(400, 400, "文件类型非法");
+        String extension = imageExtension(file);
+        if (extension == null) {
+            throw new BizException(400, 400, "Unsupported file type");
         }
         if (file.getSize() > 5L * 1024 * 1024) {
-            throw new BizException(400, 400, "文件超大小限制");
+            throw new BizException(400, 400, "File is too large");
         }
         MealRecord meal = mealMapper.findById(mealId);
         if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
-            throw new BizException(404, 404, "菜品不存在");
+            throw new BizException(404, 404, "Meal not found");
         }
-        String extension = switch (contentType) {
-            case "image/jpeg" -> ".jpg";
-            case "image/png" -> ".png";
-            case "image/webp" -> ".webp";
-            default -> "";
-        };
         String fileName = "meal-" + mealId + "-" + System.currentTimeMillis() + extension;
         Path uploadDir = Path.of("uploads", "meals");
         Path target = uploadDir.resolve(fileName);
@@ -302,7 +305,7 @@ public class AppService {
             Files.createDirectories(uploadDir);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException ex) {
-            throw new BizException(500, 500, "图片上传失败");
+            throw new BizException(500, 500, "Image upload failed");
         }
         meal.setImageUrl("/uploads/meals/" + fileName);
         mealMapper.update(meal);
@@ -312,11 +315,54 @@ public class AppService {
         return data;
     }
 
+    private String imageExtension(MultipartFile file) {
+        String extension = extensionFromContentType(file.getContentType());
+        if (extension != null) {
+            return extension;
+        }
+        return extensionFromFilename(file.getOriginalFilename());
+    }
+
+    private String extensionFromContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return null;
+        }
+        String normalized = contentType.toLowerCase();
+        int parametersStart = normalized.indexOf(';');
+        if (parametersStart >= 0) {
+            normalized = normalized.substring(0, parametersStart).trim();
+        }
+        return switch (normalized) {
+            case "image/jpeg", "image/jpg" -> ".jpg";
+            case "image/png", "image/x-png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> null;
+        };
+    }
+
+    private String extensionFromFilename(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return null;
+        }
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return ".jpg";
+        }
+        if (lower.endsWith(".png")) {
+            return ".png";
+        }
+        if (lower.endsWith(".webp")) {
+            return ".webp";
+        }
+        return null;
+    }
+
     @Transactional
     public Map<String, Object> createMeal(AuthUser actor, String name, String description, Integer calories, Integer protein,
                                           Integer sustainabilityScore, List<String> tags,
                                           List<Map<String, Object>> ingredients) {
         authSupport.requireRole(actor, "staff", "admin");
+        validateMealPayload(name, calories, protein, sustainabilityScore);
         MealRecord meal = new MealRecord();
         meal.setName(name);
         meal.setDescription(description);
@@ -340,8 +386,9 @@ public class AppService {
         authSupport.requireRole(actor, "staff", "admin");
         MealRecord meal = mealMapper.findById(mealId);
         if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
-            throw new BizException(404, 404, "菜品不存在");
+            throw new BizException(404, 404, "Meal not found");
         }
+        validateMealPayload(name, calories, protein, sustainabilityScore);
         meal.setName(name);
         meal.setDescription(description);
         meal.setCalories(calories);
@@ -361,6 +408,7 @@ public class AppService {
     public Map<String, Object> createIngredient(AuthUser actor, String name, Integer qty, LocalDate expiryDate,
                                                 List<String> allergens) {
         authSupport.requireRole(actor, "staff", "admin");
+        validateIngredientPayload(name, qty);
         IngredientRecord ingredient = new IngredientRecord();
         ingredient.setName(name);
         ingredientMapper.insert(ingredient);
@@ -382,7 +430,10 @@ public class AppService {
         authSupport.requireRole(actor, "staff", "admin");
         IngredientRecord ingredient = ingredientMapper.findById(ingredientId);
         if (ingredient == null) {
-            throw new BizException(404, 404, "食材不存在");
+            throw new BizException(404, 404, "Ingredient not found");
+        }
+        if (name == null || name.isBlank()) {
+            throw new BizException(400, 400, "Ingredient name is required");
         }
         ingredient.setName(name);
         ingredientMapper.updateName(ingredient);
@@ -393,8 +444,9 @@ public class AppService {
     public Map<String, Object> updateStock(AuthUser actor, Long ingredientId, Integer currentQtyG, LocalDate expiryDate) {
         authSupport.requireRole(actor, "staff", "admin");
         if (ingredientMapper.findById(ingredientId) == null) {
-            throw new BizException(404, 404, "食材不存在");
+            throw new BizException(404, 404, "Ingredient not found");
         }
+        validateStockPayload(currentQtyG);
         StockRecordRow latest = stockMapper.findLatestByIngredientId(ingredientId);
         if (latest == null) {
             latest = new StockRecordRow();
@@ -418,7 +470,7 @@ public class AppService {
         authSupport.requireSelfOrRole(actor, userId, "admin", "staff");
         UserPreferenceRecord pref = userPreferenceMapper.findByUserId(userId);
         if (pref == null) {
-            throw new BizException(404, 404, "用户偏好不存在");
+            throw new BizException(404, 404, "User preferences not found");
         }
         Set<String> userAllergens = lowerSet(userAllergyMapper.findAllergenNamesByUserId(userId));
         String recommendationRequestId = "req-" + userId + "-" + System.currentTimeMillis();
@@ -472,7 +524,7 @@ public class AppService {
     public Map<String, Object> orderDetail(AuthUser actor, Long orderId) {
         OrderRecord order = orderMapper.findById(orderId);
         if (order == null) {
-            throw new BizException(404, 404, "订单不存在");
+            throw new BizException(404, 404, "Order not found");
         }
         authSupport.requireSelfOrRole(actor, order.getUserId(), "admin", "staff");
         return buildOrderView(order);
@@ -503,6 +555,9 @@ public class AppService {
     @Transactional
     public Map<String, Object> createOrder(AuthUser actor, Long userId, String recommendationRequestId, List<Map<String, Object>> items) {
         authSupport.requireSelfOrRole(actor, userId, "admin", "staff");
+        if (items == null || items.isEmpty()) {
+            throw new BizException(400, 400, "Order must contain at least one item");
+        }
 
         OrderRecord order = new OrderRecord();
         order.setUserId(userId);
@@ -511,19 +566,31 @@ public class AppService {
         orderMapper.insert(order);
 
         for (Map<String, Object> item : items) {
-            Long mealId = Long.valueOf(String.valueOf(item.get("mealId")));
-            Integer quantity = Integer.valueOf(String.valueOf(item.get("quantity")));
-            MealRecord meal = mealMapper.findById(mealId);
-            if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
-                throw new BizException(404, 404, "菜品不存在");
-            }
+            boolean custom = Boolean.TRUE.equals(item == null ? null : item.get("custom"));
+            Integer quantity = positiveInt(item == null ? null : item.get("quantity"), "Quantity");
             OrderItemRecord record = new OrderItemRecord();
             record.setOrderId(order.getOrderId());
-            record.setMealId(mealId);
             record.setQuantity(quantity);
+
+            if (custom) {
+                record.setMealNameSnapshot(customName(item));
+                record.setCaloriesSnapshot(asInt(item.get("calories"), 0));
+                record.setProteinSnapshot(asInt(item.get("protein"), 0));
+                record.setSustainabilityScoreSnapshot(asInt(item.get("sustainabilityScore"), null));
+                record.setImageUrlSnapshot((String) item.get("imageUrl"));
+                record.setCustomIngredientsJson(toJson(customIngredients(item)));
+            } else {
+                Long mealId = positiveLong(item == null ? null : item.get("mealId"), "Meal ID");
+                MealRecord meal = mealMapper.findById(mealId);
+                if (meal == null || Boolean.TRUE.equals(meal.getIsDeleted())) {
+                    throw new BizException(404, 404, "Meal not found");
+                }
+                record.setMealId(mealId);
+            }
+
             orderItemMapper.insert(record);
-            if (recommendationRequestId != null && !recommendationRequestId.isBlank()) {
-                recommendationEventMapper.insert(recommendationRequestId, userId, mealId, "selected", null, order.getOrderId());
+            if (!custom && recommendationRequestId != null && !recommendationRequestId.isBlank()) {
+                recommendationEventMapper.insert(recommendationRequestId, userId, record.getMealId(), "selected", null, order.getOrderId());
             }
         }
 
@@ -541,28 +608,37 @@ public class AppService {
     public Map<String, Object> confirmOrder(AuthUser actor, Long orderId) {
         OrderRecord order = orderMapper.findById(orderId);
         if (order == null) {
-            throw new BizException(404, 404, "订单不存在");
+            throw new BizException(404, 404, "Order not found");
         }
         authSupport.requireSelfOrRole(actor, order.getUserId(), "admin", "staff");
         if (!"pending".equals(order.getStatus())) {
-            throw new BizException(409, 409, "订单状态冲突");
+            throw new BizException(409, 409, "Order status conflict");
         }
 
         List<OrderItemRecord> items = orderItemMapper.findByOrderId(orderId);
         Map<Long, Integer> totalNeed = new HashMap<>();
 
         for (OrderItemRecord item : items) {
-            List<MealIngredientRecord> mealIngredients = mealIngredientMapper.findByMealId(item.getMealId());
-            for (MealIngredientRecord mealIngredient : mealIngredients) {
-                int need = mealIngredient.getWeightG() * item.getQuantity();
-                totalNeed.merge(mealIngredient.getIngredientId(), need, Integer::sum);
+            if (item.getMealId() == null) {
+                for (Map<String, Object> customIngredient : parseJsonList(item.getCustomIngredientsJson())) {
+                    Long ingredientId = positiveLong(customIngredient.get("ingredientId"), "Ingredient ID");
+                    Integer weight = positiveInt(customIngredient.get("weight_g"), "Ingredient weight");
+                    int need = weight * item.getQuantity();
+                    totalNeed.merge(ingredientId, need, Integer::sum);
+                }
+            } else {
+                List<MealIngredientRecord> mealIngredients = mealIngredientMapper.findByMealId(item.getMealId());
+                for (MealIngredientRecord mealIngredient : mealIngredients) {
+                    int need = mealIngredient.getWeightG() * item.getQuantity();
+                    totalNeed.merge(mealIngredient.getIngredientId(), need, Integer::sum);
+                }
             }
         }
 
         for (Map.Entry<Long, Integer> entry : totalNeed.entrySet()) {
             StockRecordRow stock = stockMapper.findLatestByIngredientId(entry.getKey());
             if (stock == null || stock.getCurrentQtyG() < entry.getValue()) {
-                throw new BizException(409, 409, "库存不足");
+                throw new BizException(409, 409, "Insufficient stock");
             }
         }
 
@@ -584,11 +660,11 @@ public class AppService {
     public Map<String, Object> cancelOrder(AuthUser actor, Long orderId) {
         OrderRecord order = orderMapper.findById(orderId);
         if (order == null) {
-            throw new BizException(404, 404, "订单不存在");
+            throw new BizException(404, 404, "Order not found");
         }
         authSupport.requireSelfOrRole(actor, order.getUserId(), "admin", "staff");
         if (!"pending".equals(order.getStatus())) {
-            throw new BizException(409, 409, "订单状态冲突");
+            throw new BizException(409, 409, "Order status conflict");
         }
         orderMapper.updateStatus(orderId, "cancelled");
         Map<String, Object> data = new LinkedHashMap<>();
@@ -612,7 +688,7 @@ public class AppService {
         LocalDate rangeStart = from == null ? LocalDate.now().minusDays(29) : from;
         LocalDate rangeEnd = to == null ? LocalDate.now() : to;
         if (rangeEnd.isBefore(rangeStart)) {
-            throw new BizException(400, 400, "参数错误");
+            throw new BizException(400, 400, "Invalid parameters");
         }
         LocalDateTime fromAt = rangeStart.atStartOfDay();
         LocalDateTime toExclusive = rangeEnd.plusDays(1).atStartOfDay();
@@ -649,7 +725,7 @@ public class AppService {
         authSupport.requireRole(actor, "admin");
         SustainabilityReportRecord record = sustainabilityReportMapper.findById(reportId);
         if (record == null) {
-            throw new BizException(404, 404, "报告不存在");
+            throw new BizException(404, 404, "Report not found");
         }
         return buildStoredReport(record);
     }
@@ -659,7 +735,7 @@ public class AppService {
         LocalDate rangeStart = from == null ? LocalDate.now().minusDays(29) : from;
         LocalDate rangeEnd = to == null ? LocalDate.now() : to;
         if (rangeEnd.isBefore(rangeStart)) {
-            throw new BizException(400, 400, "参数错误");
+            throw new BizException(400, 400, "Invalid parameters");
         }
         LocalDateTime fromAt = rangeStart.atStartOfDay();
         LocalDateTime toExclusive = rangeEnd.plusDays(1).atStartOfDay();
@@ -706,7 +782,7 @@ public class AppService {
     }
 
     public Map<String, Object> listIngredients(AuthUser actor, String keyword, LocalDate expiryBefore, Integer page, Integer size) {
-        authSupport.requireRole(actor, "staff", "admin");
+        authSupport.requireRole(actor, "customer", "staff", "admin");
         int safePage = normalizePage(page);
         int safeSize = normalizeSize(size);
         List<Map<String, Object>> all = ingredientMapper.findAll().stream()
@@ -717,10 +793,10 @@ public class AppService {
     }
 
     public Map<String, Object> ingredientDetail(AuthUser actor, Long ingredientId) {
-        authSupport.requireRole(actor, "staff", "admin");
+        authSupport.requireRole(actor, "customer", "staff", "admin");
         IngredientRecord ingredient = ingredientMapper.findById(ingredientId);
         if (ingredient == null) {
-            throw new BizException(404, 404, "食材不存在");
+            throw new BizException(404, 404, "Ingredient not found");
         }
         return buildIngredientView(ingredient);
     }
@@ -729,10 +805,10 @@ public class AppService {
         if (ingredients != null) {
             mealIngredientMapper.deleteByMealId(mealId);
             for (Map<String, Object> item : ingredients) {
-                Long ingredientId = Long.valueOf(String.valueOf(item.get("ingredientId")));
-                Integer weight = Integer.valueOf(String.valueOf(item.get("weight_g")));
+                Long ingredientId = positiveLong(item == null ? null : item.get("ingredientId"), "Ingredient ID");
+                Integer weight = positiveInt(item == null ? null : item.get("weight_g"), "Ingredient weight");
                 if (ingredientMapper.findById(ingredientId) == null) {
-                    throw new BizException(404, 404, "食材不存在");
+                    throw new BizException(404, 404, "Ingredient not found");
                 }
                 MealIngredientRecord row = new MealIngredientRecord();
                 row.setMealId(mealId);
@@ -745,6 +821,10 @@ public class AppService {
         if (tags != null) {
             tagMapper.deleteMealTags(mealId);
             for (String tagName : tags) {
+                if (tagName == null || tagName.isBlank()) {
+                    continue;
+                }
+                tagName = tagName.trim();
                 TagMapper.TagRow tag = tagMapper.findByName(tagName);
                 if (tag == null) {
                     tag = new TagMapper.TagRow();
@@ -870,6 +950,19 @@ public class AppService {
         return Integer.valueOf(String.valueOf(obj));
     }
 
+    private Integer positiveInt(Object obj, String fieldName) {
+        Integer value;
+        try {
+            value = asInt(obj, null);
+        } catch (RuntimeException ex) {
+            throw new BizException(400, 400, fieldName + " must be a positive number");
+        }
+        if (value == null || value <= 0) {
+            throw new BizException(400, 400, fieldName + " must be a positive number");
+        }
+        return value;
+    }
+
     private Long asLong(Object obj, Long def) {
         if (obj == null) {
             return def;
@@ -878,6 +971,55 @@ public class AppService {
             return n.longValue();
         }
         return Long.valueOf(String.valueOf(obj));
+    }
+
+    private Long positiveLong(Object obj, String fieldName) {
+        Long value;
+        try {
+            value = asLong(obj, null);
+        } catch (RuntimeException ex) {
+            throw new BizException(400, 400, fieldName + " must be a positive number");
+        }
+        if (value == null || value <= 0) {
+            throw new BizException(400, 400, fieldName + " must be a positive number");
+        }
+        return value;
+    }
+
+    private void validateMealPayload(String name, Integer calories, Integer protein, Integer sustainabilityScore) {
+        if (name == null || name.isBlank()) {
+            throw new BizException(400, 400, "Meal name is required");
+        }
+        validatePositive(calories, "Calories");
+        validatePositive(protein, "Protein");
+        if (sustainabilityScore == null || sustainabilityScore < 1 || sustainabilityScore > 10) {
+            throw new BizException(400, 400, "Sustainability score must be between 1 and 10");
+        }
+    }
+
+    private void validateIngredientPayload(String name, Integer currentQtyG) {
+        if (name == null || name.isBlank()) {
+            throw new BizException(400, 400, "Ingredient name is required");
+        }
+        validateStockPayload(currentQtyG);
+    }
+
+    private void validateStockPayload(Integer currentQtyG) {
+        if (currentQtyG == null || currentQtyG < 0) {
+            throw new BizException(400, 400, "Stock quantity must be zero or greater");
+        }
+    }
+
+    private void validatePositive(Integer value, String fieldName) {
+        if (value == null || value <= 0) {
+            throw new BizException(400, 400, fieldName + " must be a positive number");
+        }
+    }
+
+    private void validateOptionalPositive(Integer value, String fieldName) {
+        if (value != null && value <= 0) {
+            throw new BizException(400, 400, fieldName + " must be a positive number");
+        }
     }
 
     private Map<String, Object> paginateOrders(List<OrderRecord> orders, int page, int size) {
@@ -913,19 +1055,28 @@ public class AppService {
         int totalProtein = 0;
         for (OrderItemRecord item : orderItemMapper.findByOrderId(order.getOrderId())) {
             MealRecord meal = mealMapper.findById(item.getMealId());
-            int mealCalories = meal == null || meal.getCalories() == null ? 0 : meal.getCalories();
-            int mealProtein = meal == null || meal.getProtein() == null ? 0 : meal.getProtein();
+            int mealCalories = item.getCaloriesSnapshot() != null
+                    ? item.getCaloriesSnapshot()
+                    : meal == null || meal.getCalories() == null ? 0 : meal.getCalories();
+            int mealProtein = item.getProteinSnapshot() != null
+                    ? item.getProteinSnapshot()
+                    : meal == null || meal.getProtein() == null ? 0 : meal.getProtein();
             totalCalories += mealCalories * item.getQuantity();
             totalProtein += mealProtein * item.getQuantity();
 
             Map<String, Object> itemView = new LinkedHashMap<>();
+            itemView.put("itemId", item.getItemId());
             itemView.put("mealId", item.getMealId());
             itemView.put("quantity", item.getQuantity());
-            itemView.put("name", meal == null ? null : meal.getName());
-            itemView.put("calories", meal == null ? null : meal.getCalories());
-            itemView.put("protein", meal == null ? null : meal.getProtein());
-            itemView.put("sustainabilityScore", meal == null ? null : meal.getSustainabilityScore());
-            itemView.put("imageUrl", meal == null ? null : meal.getImageUrl());
+            itemView.put("custom", item.getMealId() == null);
+            itemView.put("name", item.getMealNameSnapshot() != null ? item.getMealNameSnapshot() : meal == null ? null : meal.getName());
+            itemView.put("calories", mealCalories);
+            itemView.put("protein", mealProtein);
+            itemView.put("sustainabilityScore", item.getSustainabilityScoreSnapshot() != null
+                    ? item.getSustainabilityScoreSnapshot()
+                    : meal == null ? null : meal.getSustainabilityScore());
+            itemView.put("imageUrl", item.getImageUrlSnapshot() != null ? item.getImageUrlSnapshot() : meal == null ? null : meal.getImageUrl());
+            itemView.put("ingredients", parseJsonList(item.getCustomIngredientsJson()));
             itemViews.add(itemView);
         }
 
@@ -995,7 +1146,7 @@ public class AppService {
             return;
         }
         if (!List.of("pending", "confirmed", "cancelled").contains(status)) {
-            throw new BizException(400, 400, "参数错误");
+            throw new BizException(400, 400, "Invalid parameters");
         }
     }
 
@@ -1073,19 +1224,74 @@ public class AppService {
 
     private Map<String, Object> parseJson(String json) {
         try {
+            String normalized = json;
+            var root = objectMapper.readTree(normalized);
+            if (root.isTextual()) {
+                normalized = root.asText();
+            }
+            return objectMapper.readValue(normalized, new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new BizException(500, 500, "Failed to parse report");
+        }
+    }
+
+    private List<Map<String, Object>> parseJsonList(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
             return objectMapper.readValue(json, new TypeReference<>() {
             });
         } catch (Exception e) {
-            throw new BizException(500, 500, "报告解析失败");
+            throw new BizException(500, 500, "Failed to parse order item");
         }
     }
 
     private String toJson(Map<String, Object> value) {
+        return toJson((Object) value);
+    }
+
+    private String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (Exception e) {
-            throw new BizException(500, 500, "报告序列化失败");
+            throw new BizException(500, 500, "Failed to serialize data");
         }
+    }
+
+    private String customName(Map<String, Object> item) {
+        Object name = item == null ? null : item.get("name");
+        if (name == null || String.valueOf(name).isBlank()) {
+            return "Custom bowl";
+        }
+        return String.valueOf(name).trim();
+    }
+
+    private List<Map<String, Object>> customIngredients(Map<String, Object> item) {
+        Object value = item == null ? null : item.get("ingredients");
+        if (!(value instanceof List<?> rawList) || rawList.isEmpty()) {
+            throw new BizException(400, 400, "Custom order item must contain ingredients");
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object rawItem : rawList) {
+            if (!(rawItem instanceof Map<?, ?> rawMap)) {
+                throw new BizException(400, 400, "Custom ingredient is invalid");
+            }
+            Long ingredientId = positiveLong(rawMap.get("ingredientId"), "Ingredient ID");
+            Integer weight = positiveInt(rawMap.get("weight_g"), "Ingredient weight");
+            IngredientRecord ingredient = ingredientMapper.findById(ingredientId);
+            if (ingredient == null) {
+                throw new BizException(404, 404, "Ingredient not found");
+            }
+            Map<String, Object> normalized = new LinkedHashMap<>();
+            normalized.put("ingredientId", ingredientId);
+            normalized.put("name", rawMap.get("name") == null ? ingredient.getName() : String.valueOf(rawMap.get("name")));
+            normalized.put("weight_g", weight);
+            result.add(normalized);
+        }
+        return result;
     }
 
     private String buildReportSummary(LocalDateTime from, LocalDateTime to) {
@@ -1097,10 +1303,11 @@ public class AppService {
         String focus = highStock.stream()
                 .limit(2)
                 .map(row -> String.valueOf(row.get("name")))
-                .reduce((left, right) -> left + " 和 " + right)
-                .orElse("暂无明显高库存食材");
+                .reduce((left, right) -> left + " and " + right)
+                .orElse("no obvious high-stock ingredients");
         long days = Math.max(1, java.time.Duration.between(from, to).toDays());
-        return "过去 " + days + " 天低碳餐选择率为 " + rate + "%，高库存食材主要集中在 " + focus + "。";
+        return "Over the past " + days + " days, the low-carbon meal selection rate was " + rate
+                + "%, and high-stock ingredients were mainly concentrated in " + focus + ".";
     }
 
     private double ratio(long numerator, long denominator) {

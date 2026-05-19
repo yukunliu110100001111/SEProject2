@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { cancelOrder, confirmOrder, getOrders } from '../api/app';
 import Navbar from '../components/Navbar';
@@ -17,22 +17,27 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await getOrders({ userId: auth.userId, page: 1, size: 100 });
+      const canViewAllOrders = auth.role === 'staff' || auth.role === 'admin';
+      const data = await getOrders({
+        ...(canViewAllOrders ? {} : { userId: auth.userId }),
+        page: 1,
+        size: 100,
+      });
       setOrders(data.items || []);
     } catch (err) {
       setError(err.message || 'Failed to load orders.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [auth.role, auth.userId]);
 
   useEffect(() => {
     loadOrders();
-  }, [auth.userId]);
+  }, [loadOrders]);
 
   const handleStatusChange = async (orderId, action) => {
     setBusyId(orderId);
@@ -53,7 +58,7 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
       <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="orders-header">
-        <h1>Orders</h1>
+        <h1>{auth.role === 'staff' || auth.role === 'admin' ? 'All orders' : 'Orders'}</h1>
       </div>
 
       {location.state?.createdOrderId && (
@@ -83,7 +88,7 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
               <div className="order-items">
                 {order.items.map((item) => (
-                  <div key={`${order.orderId}-${item.mealId}`} className="order-item-row">
+                  <div key={`${order.orderId}-${item.itemId ?? item.mealId}`} className="order-item-row">
                     <div className="order-item-name">
                       {item.name} <span>x {item.quantity}</span>
                     </div>

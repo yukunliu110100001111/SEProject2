@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './App.css';
 import 'premium-react-loaders/styles';
 import Dashboard from './views/Dashboard';
+import Customize from './views/Customize';
 import Home from './views/Home';
 import Login from './views/Login';
 import MealDetail from './views/MealDetail';
@@ -182,6 +183,12 @@ function App() {
             path="/orders"
             element={
               isAuthenticated ? <Orders {...sharedProps} /> : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/customize"
+            element={
+              isAuthenticated ? <Customize {...sharedProps} /> : <Navigate to="/login" replace />
             }
           />
           <Route

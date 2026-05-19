@@ -1,4 +1,4 @@
-/* 1. 基础容器与背景 */
+
 .dashboard-container {
   min-height: 100vh;
   background: #f0f4f3;
@@ -7,7 +7,7 @@
   font-family: 'Inter', -apple-system, sans-serif;
 }
 
-/* 2. 头部区域 */
+
 .dashboard-header {
   max-width: 1100px;
   margin: 0 auto 30px;
@@ -26,7 +26,7 @@
   font-size: 16px;
 }
 
-/* 3. 网格布局系统 */
+
 .dashboard-grid {
   max-width: 1100px;
   margin: 0 auto;
@@ -36,7 +36,7 @@
   gap: 25px;
 }
 
-/* 4. 通用卡片组件 [对应 API 8.1 模块展示] */
+
 .admin-card {
   background: white;
   border-radius: 24px;
@@ -61,7 +61,7 @@
   font-weight: 700;
 }
 
-/* 5. 低碳率仪表盘样式 [对应 API 8.1 lowCarbonRate] */
+
 .gauge-container {
   text-align: center;
   padding: 10px 0;
@@ -96,7 +96,7 @@
   font-style: italic;
 }
 
-/* 6. 热销榜列表样式 [对应 API 8.1 topMeals] */
+
 .rank-item {
   display: flex;
   align-items: center;
@@ -131,7 +131,7 @@
   color: #64748b;
 }
 
-/* 7. 库存监控样式 [对应 API 8.1 stockUsage 与 9.1 状态] */
+
 .stock-item {
   margin-bottom: 22px;
 }
@@ -146,7 +146,7 @@
 
 .stock-name { color: #475569; }
 
-/* 状态文字颜色 */
+
 .stock-qty.near_expiry,
 .stock-qty.critical { color: #ef4444; }
 .stock-qty.high_stock,
@@ -166,14 +166,14 @@
   transition: width 1s ease-in-out;
 }
 
-/* 进度条颜色映射 [对应 API 147-149] */
+
 .stock-progress-fill.near_expiry,
 .stock-progress-fill.critical { background: #ef4444; }
 .stock-progress-fill.high_stock,
 .stock-progress-fill.low { background: #f59e0b; }
 .stock-progress-fill.normal { background: #10b981; }
 
-/* 8. 加载状态动画 */
+
 .loading-container {
   height: 100vh;
   display: flex;
@@ -198,7 +198,7 @@
   100% { transform: rotate(360deg); }
 }
 
-/* 9. 响应式适配 */
+
 @media (max-width: 768px) {
   .dashboard-header h1 { font-size: 26px; }
   .dashboard-grid { grid-template-columns: 1fr; }

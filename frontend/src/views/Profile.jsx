@@ -36,7 +36,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
         totalProtein: 0,
       }
     );
-  }, []);
+  }, [orders]);
 
   useEffect(() => {
     let active = true;

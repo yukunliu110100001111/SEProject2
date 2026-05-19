@@ -23,6 +23,9 @@ public interface UserMapper {
     @Update("update users set username = #{username} where user_id = #{userId}")
     int updateUsername(UserRecord user);
 
+    @Update("update users set password_hash = #{passwordHash} where user_id = #{userId}")
+    int updatePasswordHash(UserRecord user);
+
     @Select("select count(*) from users")
     long countAll();
 }

@@ -48,7 +48,7 @@ public class AiAssistantService {
 
     private AiChatResponse runConversation(AuthUser actor, AiChatRequest request, AiEventSink eventSink) {
         if (model == null || model.isBlank()) {
-            throw new BizException(503, 503, "AI 助手未配置，请设置 ARK_MODEL");
+            throw new BizException(503, 503, "AI assistant is not configured. Please set AI_ARK_MODEL");
         }
         List<AiChatMessage> incoming = request == null || request.messages() == null
                 ? List.of()
@@ -57,7 +57,7 @@ public class AiAssistantService {
                 .limit(20)
                 .toList();
         if (incoming.isEmpty()) {
-            throw new BizException(400, 400, "消息不能为空");
+            throw new BizException(400, 400, "Message cannot be empty");
         }
 
         List<Map<String, String>> messages = new ArrayList<>();
@@ -70,7 +70,7 @@ public class AiAssistantService {
         List<String> toolCalls = new ArrayList<>();
 
         for (int step = 0; step < MAX_TOOL_STEPS; step++) {
-            eventSink.status("thinking", "正在分析你的请求");
+            eventSink.status("thinking", "Analyzing your request");
             String content = arkChatClient.chat(messages, model);
             JsonNode command = tryParseCommand(content);
             if (command == null) {
@@ -95,15 +95,15 @@ public class AiAssistantService {
             Object result = aiToolService.execute(actor, toolName, arguments);
             String resultJson = writeJson(result);
             toolCalls.add(toolName);
-            eventSink.status("tool_result", toolName + " 已返回结果");
+            eventSink.status("tool_result", toolName + " returned a result");
 
             messages.add(message("assistant", content));
             messages.add(message("system",
                     "TOOL_RESULT " + toolName + ": " + resultJson
-                            + "\n请基于这个结果继续判断。若还需其他数据，再发起一次 tool_call；若信息足够，返回 final。"));
+                            + "\nUse this result to continue. If more data is needed, request another tool_call. If the information is sufficient, return final."));
         }
 
-        throw new BizException(502, 502, "AI 工具调用次数过多，请换个问法");
+        throw new BizException(502, 502, "Too many AI tool calls. Please rephrase the request");
     }
 
     private AiChatResponse finalizeReply(String reply, List<String> toolCalls, AiEventSink eventSink) {
@@ -118,7 +118,7 @@ public class AiAssistantService {
                                          List<String> toolCalls,
                                          AiEventSink eventSink) {
         String actionType = command.path("action").asText();
-        String summary = command.path("summary").asText("请确认是否执行该操作。");
+        String summary = command.path("summary").asText("Please confirm whether to run this action.");
         AiPendingActionView pendingAction = aiPendingActionService.create(actor, actionType,
                 command.path("arguments"), summary);
         eventSink.actionRequired(pendingAction);
@@ -129,39 +129,39 @@ public class AiAssistantService {
 
     private Map<String, String> systemMessage(AuthUser actor) {
         String prompt = """
-                你是 GreenBite 项目的中文 AI 助手。
-                你的职责：
-                1. 帮用户解释餐食推荐、个人偏好、订单状态和库存信息。
-                2. 只能通过后端工具访问数据库，绝不编造数据库结果。
-                3. 面向普通用户时，优先解释当前登录用户自己的数据。
-                4. 普通用户不能查看库存；只有 staff 或 admin 才能看库存摘要。
+                You are GreenBite's English AI assistant.
+                Your responsibilities:
+                1. Help users understand meal recommendations, personal preferences, order status, and inventory information.
+                2. Access database information only through backend tools. Never invent database results.
+                3. For normal customers, prioritize the currently logged-in user's own data.
+                4. Customers cannot view inventory. Only staff or admin users can view inventory summaries.
 
-                当前登录用户：
+                Current logged-in user:
                 - userId: %d
                 - username: %s
                 - role: %s
 
-                可用工具：
+                Available tools:
                 - get_user_profile { "userId"?: number }
                 - get_recommendations { "userId"?: number }
                 - search_meals { "keyword"?: string }
                 - get_meal_detail { "mealId": number }
                 - get_inventory_summary {}
                 - get_order_status { "orderId": number }
-                - 可提议待确认写操作：
+                - You may propose these write actions for user confirmation:
                   1. update_preferences { "targetCalories"?: number, "targetProtein"?: number, "isVegetarian"?: boolean, "allergens"?: string[] }
                   2. create_order { "items": [{"mealId": number, "quantity": number}] }
 
-                输出规则：
-                - 如果你需要查库，必须只输出 JSON，不要带 markdown，不要带解释：
-                  {"type":"tool_call","tool":"工具名","arguments":{...}}
-                - 如果你已经可以回答，也必须只输出 JSON：
-                  {"type":"final","answer":"给用户的中文答复"}
-                - 如果用户要求执行写操作，不要直接执行，先输出：
-                  {"type":"propose_action","action":"操作名","arguments":{...},"summary":"给用户的确认文案"}
-                - 每次最多调用一个工具。
-                - 不要泄露实现细节、密钥、数据库连接信息。
-                - 回答简洁、直接、中文输出。
+                Output rules:
+                - If you need database data, output JSON only. Do not include markdown or explanations:
+                  {"type":"tool_call","tool":"tool_name","arguments":{...}}
+                - If you can answer, also output JSON only:
+                  {"type":"final","answer":"English answer for the user"}
+                - If the user asks for a write action, do not execute it directly. First output:
+                  {"type":"propose_action","action":"action_name","arguments":{...},"summary":"English confirmation text for the user"}
+                - Call at most one tool each turn.
+                - Do not reveal implementation details, secrets, or database connection information.
+                - Always answer in concise, direct English, even if the user writes in another language.
                 """.formatted(actor.userId(), actor.username(), actor.role());
         return message("system", prompt);
     }
@@ -198,7 +198,7 @@ public class AiAssistantService {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (Exception ex) {
-            throw new BizException(500, 500, "AI 工具结果序列化失败");
+            throw new BizException(500, 500, "Failed to serialize AI tool result");
         }
     }
 

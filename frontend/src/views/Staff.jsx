@@ -36,6 +36,20 @@ const emptyIngredientForm = {
   allergensInput: '',
 };
 
+const SUPPORTED_MEAL_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/x-png', 'image/webp']);
+const SUPPORTED_MEAL_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const MEAL_IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp';
+const MAX_MEAL_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
+const isSupportedMealImage = (file) => {
+  const normalizedType = file.type.toLowerCase();
+  if (SUPPORTED_MEAL_IMAGE_TYPES.has(normalizedType)) {
+    return true;
+  }
+  const normalizedName = file.name.toLowerCase();
+  return SUPPORTED_MEAL_IMAGE_EXTENSIONS.some((extension) => normalizedName.endsWith(extension));
+};
+
 const parseCommaList = (value) =>
   value
     .split(',')
@@ -96,8 +110,13 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file.');
+    if (!isSupportedMealImage(file)) {
+      setError('Please choose a PNG, JPG, or WEBP image.');
+      return;
+    }
+
+    if (file.size > MAX_MEAL_IMAGE_SIZE_BYTES) {
+      setError('Meal image must be 5 MB or smaller.');
       return;
     }
 
@@ -282,7 +301,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
                 <input
                   ref={mealImageInputRef}
                   type="file"
-                  accept="image/*"
+                  accept={MEAL_IMAGE_ACCEPT}
                   onChange={(e) => handleMealImageChange(e.target.files?.[0])}
                 />
               </label>

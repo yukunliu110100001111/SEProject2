@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import site.bjut409.backend.auth.TokenStore;
 import site.bjut409.backend.service.ArkChatClient;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = "ai.ark.model=test-model")
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class AiAssistantIntegrationTest {
 
     @Autowired
@@ -59,7 +61,7 @@ class AiAssistantIntegrationTest {
                 {"type":"tool_call","tool":"get_recommendations","arguments":{"userId":1}}
                 """);
         stubArkChatClient.enqueue("""
-                {"type":"final","answer":"基于你的偏好，当前更推荐 2 号餐食。"}
+                {"type":"final","answer":"Based on your preferences, meal 2 is the best current recommendation."}
                 """);
 
         String body = mockMvc.perform(post("/ai/chat")
@@ -68,7 +70,7 @@ class AiAssistantIntegrationTest {
                         .content("""
                                 {
                                   "messages":[
-                                    {"role":"user","content":"根据我的偏好推荐菜品"}
+                                    {"role":"user","content":"Recommend meals based on my preferences."}
                                   ]
                                 }
                                 """))
@@ -76,14 +78,14 @@ class AiAssistantIntegrationTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 
         JsonNode root = objectMapper.readTree(body).get("data");
-        assertEquals("基于你的偏好，当前更推荐 2 号餐食。", root.get("reply").asText());
+        assertEquals("Based on your preferences, meal 2 is the best current recommendation.", root.get("reply").asText());
         assertEquals("get_recommendations", root.get("toolCalls").get(0).asText());
     }
 
     @Test
     void ai_chat_should_require_confirmation_before_writing_preferences() throws Exception {
         stubArkChatClient.enqueue("""
-                {"type":"propose_action","action":"update_preferences","arguments":{"targetCalories":1700,"targetProtein":95,"isVegetarian":true,"allergens":["nut"]},"summary":"我准备把你的目标热量改为 1700、蛋白质改为 95，并开启素食偏好。确认后我再执行。"}
+                {"type":"propose_action","action":"update_preferences","arguments":{"targetCalories":1700,"targetProtein":95,"isVegetarian":true,"allergens":["nut"]},"summary":"I will update your calorie target to 1700, protein target to 95, and enable vegetarian preference after you confirm."}
                 """);
 
         String chatBody = mockMvc.perform(post("/ai/chat")
@@ -92,7 +94,7 @@ class AiAssistantIntegrationTest {
                         .content("""
                                 {
                                   "messages":[
-                                    {"role":"user","content":"把我的热量目标改成 1700，蛋白质改成 95，并设置为素食"}
+                                    {"role":"user","content":"Set my calorie target to 1700, protein target to 95, and make me vegetarian."}
                                   ]
                                 }
                                 """))
@@ -108,7 +110,7 @@ class AiAssistantIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 
-        assertEquals("已按确认内容更新你的饮食偏好。",
+        assertEquals("Your dietary preferences have been updated.",
                 objectMapper.readTree(confirmBody).get("data").get("reply").asText());
 
         String userBody = mockMvc.perform(post("/auth/login")

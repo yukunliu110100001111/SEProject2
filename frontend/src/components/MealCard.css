@@ -2,7 +2,7 @@
   background: white;
   border-radius: 20px;
   overflow: hidden;
-  /* 更新：使用更有层次感的柔和双重阴影，更有“悬浮感” */
+  
   box-shadow: 0 10px 25px rgba(0,0,0,0.04), 0 2px 5px rgba(45, 106, 79, 0.03);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
@@ -60,7 +60,7 @@
 
 .meal-name {
   font-size: 18px;
-  /* 更新：明确设为 700 粗体，让菜名更醒目 */
+  
   font-weight: 700;
   color: #1b4332;
   margin-bottom: 8px;
@@ -107,7 +107,7 @@
   color: white;
 }
 
-/* --- 新增：标签与营养素样式 --- */
+
 .meal-tags {
   display: flex;
   gap: 8px;
