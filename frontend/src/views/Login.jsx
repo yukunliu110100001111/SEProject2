@@ -9,8 +9,8 @@ import './Login.css';
 
 const Login = ({ onLoginSuccess }) => {
   const [form, setForm] = useState({
-    username: 'customer1',
-    password: '123456',
+    username: '',
+    password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isFormFocused, setIsFormFocused] = useState(false);
