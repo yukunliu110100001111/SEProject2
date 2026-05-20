@@ -3,6 +3,7 @@ import { Minus, Plus, RotateCcw, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createOrder, getIngredients } from '../api/app';
 import Navbar from '../components/Navbar';
+import { useI18n } from '../i18n';
 import { getIngredientVisual } from '../utils/ingredientVisuals';
 import './Customize.css';
 
@@ -118,6 +119,7 @@ const IngredientModel = ({ model }) => {
 };
 
 const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [ingredients, setIngredients] = useState([]);
   const [selectedIngredients, setSelectedIngredients] = useState([]);
@@ -150,7 +152,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
         }));
       } catch (err) {
         if (active) {
-          setError(err.message || 'Failed to load ingredients.');
+          setError(err.message || t('failedLoadIngredients'));
         }
       } finally {
         if (active) {
@@ -163,7 +165,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   const filteredIngredients = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -252,7 +254,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
     try {
       if (selectedIngredients.some((ingredient) => ingredient.grams > MAX_GRAMS)) {
-        setSubmitError(`Each ingredient can be at most ${MAX_GRAMS}g.`);
+        setSubmitError(t('maxIngredient', { grams: MAX_GRAMS }));
         return;
       }
       const response = await createOrder({
@@ -260,7 +262,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
         items: [
           {
             custom: true,
-            name: 'Custom bowl',
+            name: t('customBowlName'),
             quantity: 1,
             calories: Math.round(totals.calories),
             protein: Math.round(totals.protein),
@@ -276,7 +278,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
       setSelectedIngredients([]);
       navigate('/orders', { state: { createdOrderId: response.orderId } });
     } catch (err) {
-      setSubmitError(err.message || 'Failed to submit custom order.');
+      setSubmitError(err.message || t('failedSubmitCustomOrder'));
     } finally {
       setSubmitting(false);
     }
@@ -289,8 +291,8 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
       <main className="customize-shell">
         <section className="customize-header">
           <div>
-            <span className="customize-kicker">Personalized meal</span>
-            <h1>Build your plate</h1>
+            <span className="customize-kicker">{t('personalizedMeal')}</span>
+            <h1>{t('buildYourPlate')}</h1>
           </div>
           <button
             type="button"
@@ -299,26 +301,26 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
             disabled={selectedIngredients.length === 0}
           >
             <RotateCcw size={18} />
-            Reset
+            {t('reset')}
           </button>
         </section>
 
         <section className="customize-layout">
           <div className="ingredient-picker">
             <div className="picker-toolbar">
-              <h2>Ingredients</h2>
+              <h2>{t('ingredients')}</h2>
               <label className="ingredient-search">
                 <Search size={18} />
                 <input
                   type="text"
-                  placeholder="Search ingredients"
+                  placeholder={t('searchIngredients')}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
               </label>
             </div>
 
-            {loading && <div className="customize-message">Loading ingredients...</div>}
+            {loading && <div className="customize-message">{t('loadingIngredients')}</div>}
             {error && <div className="customize-message error">{error}</div>}
 
             {!loading && !error && (
@@ -340,7 +342,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
                       </span>
                       <span className="ingredient-row-main">
                         <strong>{ingredient.name}</strong>
-                        <span>{nutrition.calories} kcal · {nutrition.protein}g protein</span>
+                        <span>{nutrition.calories} kcal · {nutrition.protein}g {t('proteinShort')}</span>
                       </span>
                       <span className="ingredient-row-meta">
                         {ingredient.currentQty_g ?? 0}g
@@ -355,11 +357,11 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
             )}
           </div>
 
-          <section className="ingredient-display" aria-label="Ingredient bowl display">
+          <section className="ingredient-display" aria-label={t('ingredientBowlDisplay')}>
             <div className="display-header">
               <div>
-                <span>Display area</span>
-                <h2>Custom bowl</h2>
+                <span>{t('displayArea')}</span>
+                <h2>{t('customBowl')}</h2>
               </div>
             </div>
 
@@ -391,7 +393,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
               <div className="bowl-front"></div>
               <div className="bowl-rim"></div>
               {selectedIngredients.length === 0 && (
-                <div className="bowl-empty-note">Add ingredients to fill the bowl.</div>
+                <div className="bowl-empty-note">{t('addIngredientsToFill')}</div>
               )}
             </div>
 
@@ -407,18 +409,18 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
             )}
           </section>
 
-          <aside className="custom-meal-panel" aria-label="Selected ingredient nutrition">
+          <aside className="custom-meal-panel" aria-label={t('selectedIngredientNutrition')}>
             <div className="custom-meal-header">
               <div>
-                <span>Current dish</span>
-                <h2>{selectedIngredients.length} ingredients</h2>
+                <span>{t('currentDish')}</span>
+                <h2>{t('ingredientsCount', { count: selectedIngredients.length })}</h2>
               </div>
             </div>
 
             <div className="selected-list">
               {selectedIngredients.length === 0 ? (
                 <div className="empty-selection">
-                  Nutrition will update when ingredients are added.
+                  {t('nutritionUpdates')}
                 </div>
               ) : (
                 selectedIngredients.map((ingredient) => (
@@ -427,14 +429,14 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
                       <strong>{ingredient.name}</strong>
                       <span>
                         {metricForWeight(ingredient.nutrition.calories, ingredient.grams)} kcal ·{' '}
-                        {metricForWeight(ingredient.nutrition.protein, ingredient.grams)}g protein
+                        {metricForWeight(ingredient.nutrition.protein, ingredient.grams)}g {t('proteinShort')}
                       </span>
                     </div>
                     <div className="weight-controls">
                       <button
                         type="button"
                         onClick={() => updateIngredientWeight(ingredient.ingredientId, ingredient.grams - 10)}
-                        aria-label={`Reduce ${ingredient.name}`}
+                        aria-label={t('reduceName', { name: ingredient.name })}
                       >
                         <Minus size={14} />
                       </button>
@@ -447,13 +449,13 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
                         onChange={(event) =>
                           updateIngredientWeight(ingredient.ingredientId, event.target.value)
                         }
-                        aria-label={`${ingredient.name} grams`}
+                        aria-label={t('nameGrams', { name: ingredient.name })}
                       />
                       <span>g</span>
                       <button
                         type="button"
                         onClick={() => updateIngredientWeight(ingredient.ingredientId, ingredient.grams + 10)}
-                        aria-label={`Increase ${ingredient.name}`}
+                        aria-label={t('increaseName', { name: ingredient.name })}
                       >
                         <Plus size={14} />
                       </button>
@@ -461,7 +463,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
                         type="button"
                         className="remove-selected"
                         onClick={() => removeIngredient(ingredient.ingredientId)}
-                        aria-label={`Remove ${ingredient.name}`}
+                        aria-label={t('removeName', { name: ingredient.name })}
                       >
                         <X size={14} />
                       </button>
@@ -473,24 +475,24 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
             <div className="nutrition-summary">
               <div className="summary-row featured">
-                <span>Total calories</span>
+                <span>{t('totalCalories')}</span>
                 <strong>{roundMetric(totals.calories)} kcal</strong>
               </div>
               <div className="summary-grid">
                 <div>
-                  <span>Protein</span>
+                  <span>{t('proteinShort')}</span>
                   <strong>{roundMetric(totals.protein)}g</strong>
                 </div>
                 <div>
-                  <span>Carbs</span>
+                  <span>{t('carbs')}</span>
                   <strong>{roundMetric(totals.carbs)}g</strong>
                 </div>
                 <div>
-                  <span>Fat</span>
+                  <span>{t('fat')}</span>
                   <strong>{roundMetric(totals.fat)}g</strong>
                 </div>
                 <div>
-                  <span>Weight</span>
+                  <span>{t('weight')}</span>
                   <strong>{roundMetric(totals.weight)}g</strong>
                 </div>
               </div>
@@ -501,7 +503,7 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
                 disabled={selectedIngredients.length === 0 || submitting}
                 onClick={handleSubmitOrder}
               >
-                {submitting ? 'Submitting...' : 'Submit order'}
+                {submitting ? t('submitting') : t('submitOrder')}
               </button>
             </div>
           </aside>

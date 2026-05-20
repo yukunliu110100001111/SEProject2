@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 import { login, register } from '../api/app';
 import { InteractiveMonsters } from '../components/monsters/InteractiveMonsters';
 import PasswordField from '../components/PasswordField';
+import { useI18n } from '../i18n';
 import { saveSession } from '../utils/storage';
 import { pickAuthBubbleMeals } from '../utils/authBubbleMeals';
 import './Login.css';
-
-const passwordComplexityMessage =
-  'Password must be at least 8 characters and include uppercase, lowercase, and a number.';
 
 const isPasswordStrong = (password) =>
   password.length >= 8 &&
@@ -17,6 +15,7 @@ const isPasswordStrong = (password) =>
   /\d/.test(password);
 
 const Register = ({ onRegisterSuccess }) => {
+  const { language, setLanguage, t } = useI18n();
   const [form, setForm] = useState({
     username: '',
     password: '',
@@ -46,7 +45,7 @@ const Register = ({ onRegisterSuccess }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!isPasswordStrong(form.password)) {
-      setError(passwordComplexityMessage);
+      setError(t('passwordRule'));
       return;
     }
 
@@ -61,7 +60,7 @@ const Register = ({ onRegisterSuccess }) => {
         session.role === 'admin' ? '/dashboard' : session.role === 'staff' ? '/staff' : '/home'
       );
     } catch (err) {
-      setError(err.message || 'Sign-up failed.');
+      setError(err.message || t('signUpFailed'));
     } finally {
       setLoading(false);
     }
@@ -72,6 +71,14 @@ const Register = ({ onRegisterSuccess }) => {
       <div className="login-background-brand" aria-hidden="true">
         G<span>r</span>een<span>B</span>ite
       </div>
+      <button
+        className="auth-language-toggle"
+        type="button"
+        onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
+        aria-label={t('language')}
+      >
+        {language === 'en' ? '中文' : 'EN'}
+      </button>
       <div className="login-blob"></div>
       <div className="login-shell">
         <div className="monster-panel">
@@ -95,17 +102,17 @@ const Register = ({ onRegisterSuccess }) => {
           <div className="login-card-head">
             <div className="brand-logo">🪴</div>
             <div className="login-heading-group">
-              <span className="login-eyebrow">Create Account</span>
-              <h2>Create account</h2>
+              <span className="login-eyebrow">{t('createAccountEyebrow')}</span>
+              <h2>{t('createAccountTitle')}</h2>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
             <div className="input-group">
-              <span className="input-label">Username</span>
+              <span className="input-label">{t('username')}</span>
               <input
                 type="text"
-                placeholder="Username"
+                placeholder={t('username')}
                 value={form.username}
                 onChange={(e) => setForm((current) => ({ ...current, username: e.target.value }))}
                 onFocus={handleFocus}
@@ -114,9 +121,9 @@ const Register = ({ onRegisterSuccess }) => {
               />
             </div>
             <div className="input-group">
-              <span className="input-label">Password</span>
+              <span className="input-label">{t('password')}</span>
               <PasswordField
-                placeholder="Password"
+                placeholder={t('password')}
                 value={form.password}
                 onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
                 visible={showPassword}
@@ -134,17 +141,17 @@ const Register = ({ onRegisterSuccess }) => {
                   }
                 }}
               />
-              <span className="password-hint">{passwordComplexityMessage}</span>
+              <span className="password-hint">{t('passwordRule')}</span>
             </div>
             {error && <p className="login-error">{error}</p>}
             <button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create account'}
+              {loading ? t('creating') : t('createAccountTitle')}
             </button>
           </form>
 
           <div className="login-footer">
             <Link to="/login" className="register-link">
-              Back to sign in
+              {t('backToSignIn')}
             </Link>
           </div>
         </div>

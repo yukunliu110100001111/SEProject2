@@ -2,15 +2,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { cancelOrder, confirmOrder, getOrders } from '../api/app';
 import Navbar from '../components/Navbar';
+import { useI18n } from '../i18n';
 import './Orders.css';
 
 const statusMap = {
-  pending: { text: 'Created', className: 'status-pending' },
-  confirmed: { text: 'Confirmed', className: 'status-confirmed' },
-  cancelled: { text: 'Cancelled', className: 'status-cancelled' },
+  pending: { textKey: 'statusCreated', className: 'status-pending' },
+  confirmed: { textKey: 'statusConfirmed', className: 'status-confirmed' },
+  cancelled: { textKey: 'statusCancelled', className: 'status-cancelled' },
 };
 
 const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
+  const { t } = useI18n();
   const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [busyId, setBusyId] = useState(null);
@@ -29,11 +31,11 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
       });
       setOrders(data.items || []);
     } catch (err) {
-      setError(err.message || 'Failed to load orders.');
+      setError(err.message || t('failedLoadOrders'));
     } finally {
       setLoading(false);
     }
-  }, [auth.role, auth.userId]);
+  }, [auth.role, auth.userId, t]);
 
   useEffect(() => {
     loadOrders();
@@ -47,7 +49,7 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
       await (action === 'confirm' ? confirmOrder(orderId) : cancelOrder(orderId));
       await loadOrders();
     } catch (err) {
-      setError(err.message || 'Order action failed.');
+      setError(err.message || t('orderActionFailed'));
     } finally {
       setBusyId(null);
     }
@@ -58,31 +60,31 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
       <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="orders-header">
-        <h1>{auth.role === 'staff' || auth.role === 'admin' ? 'All orders' : 'Orders'}</h1>
+        <h1>{auth.role === 'staff' || auth.role === 'admin' ? t('allOrders') : t('orders')}</h1>
       </div>
 
       {location.state?.createdOrderId && (
         <div className="orders-message">
-          Order #{location.state.createdOrderId} has been created.
+          {t('orderCreated', { id: location.state.createdOrderId })}
         </div>
       )}
       {error && <div className="orders-message orders-error">{error}</div>}
 
       <div className="orders-list">
         {loading ? (
-          <div className="orders-message">Loading orders...</div>
+          <div className="orders-message">{t('loadingOrders')}</div>
         ) : orders.length === 0 ? (
-          <div className="orders-message">No orders yet.</div>
+          <div className="orders-message">{t('noOrdersYet')}</div>
         ) : (
           orders.map((order) => (
             <div key={order.orderId} className="order-card">
               <div className="order-card-header">
                 <div className="order-meta">
                   <span className="order-date">{order.createdAt || '-'}</span>
-                  <span className="order-id">Order #{order.orderId}</span>
+                  <span className="order-id">{t('orderNumber', { id: order.orderId })}</span>
                 </div>
                 <div className={`status-badge ${statusMap[order.status]?.className || 'status-pending'}`}>
-                  {statusMap[order.status]?.text || 'Unknown'}
+                  {statusMap[order.status]?.textKey ? t(statusMap[order.status].textKey) : t('unknown')}
                 </div>
               </div>
 
@@ -99,11 +101,11 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
               <div className="order-card-footer">
                 <div className="order-carbon">
-                  <span>Total protein</span>
+                  <span>{t('totalProtein')}</span>
                   <strong>{order.totalProtein} g</strong>
                 </div>
                 <div className="order-total">
-                  <span>Total calories</span>
+                  <span>{t('totalCalories')}</span>
                   <strong>{order.totalCalories} kcal</strong>
                 </div>
               </div>
@@ -116,7 +118,7 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
                     disabled={busyId === order.orderId}
                     onClick={() => handleStatusChange(order.orderId, 'confirm')}
                   >
-                    Confirm order
+                    {t('confirmOrder')}
                   </button>
                   <button
                     type="button"
@@ -124,7 +126,7 @@ const Orders = ({ auth, cartCount, onOpenCart, onLogout }) => {
                     disabled={busyId === order.orderId}
                     onClick={() => handleStatusChange(order.orderId, 'cancel')}
                   >
-                    Cancel order
+                    {t('cancelOrder')}
                   </button>
                 </div>
               )}

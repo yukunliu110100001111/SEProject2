@@ -23,7 +23,7 @@
   font-weight: 800;
   color: #1b4332;
   cursor: pointer;
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
   border: none;
   background: transparent;
 }
@@ -115,6 +115,26 @@
 }
 
 .cart-icon:hover { transform: scale(1.1); }
+
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 66px;
+  height: 34px;
+  justify-content: center;
+  border: 1px solid rgba(45, 106, 79, 0.18);
+  background: #fff;
+  color: #2d6a4f;
+  border-radius: 18px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.language-toggle:hover {
+  background: #eef8f2;
+}
 
 .cart-badge {
   position: absolute;

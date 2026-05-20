@@ -12,6 +12,7 @@ import Profile from './views/Profile';
 import Register from './views/Register';
 import Staff from './views/Staff';
 import CartDrawer from './components/CartDrawer';
+import { useI18n } from './i18n';
 import {
   clearSession,
   getCart,
@@ -22,6 +23,7 @@ import {
 const Loading = lazy(() => import('./views/Loading'));
 
 function App() {
+  const { t } = useI18n();
   const [auth, setAuth] = useState(getSession());
   const [cart, setCart] = useState(getCart());
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -151,7 +153,7 @@ function App() {
                     <div className="loading-wrapper">
                       <div className="loading-fallback-shell">
                         <span>GreenBite</span>
-                        <strong>Loading experience...</strong>
+                        <strong>{t('loadingExperience')}</strong>
                       </div>
                     </div>
                   }

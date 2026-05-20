@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import Navbar from '../components/Navbar';
+import { useI18n } from '../i18n';
 import './MealDetail.css';
 
 const fallbackImage =
   'https://images.pexels.com/photos/1640774/pexels-photo-1640774.jpeg?auto=compress&cs=tinysrgb&w=1000';
 
 const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
+  const { t } = useI18n();
   const { mealId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
         setRecommendation(recommendationList.find((item) => String(item.mealId) === String(mealId)) || null);
       } catch (err) {
         if (active) {
-          setError(err.message || 'Failed to load details.');
+          setError(err.message || t('failedLoadDetails'));
         }
       }
     };
@@ -52,7 +54,7 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
     return () => {
       active = false;
     };
-  }, [auth.userId, location.state, mealId]);
+  }, [auth.userId, location.state, mealId, t]);
 
   return (
     <div className="detail-page">
@@ -60,7 +62,7 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
 
       <div className="detail-shell">
         <button type="button" className="back-link" onClick={() => navigate('/home')}>
-          Back
+          {t('back')}
         </button>
 
         {error && <div className="detail-error">{error}</div>}
@@ -70,17 +72,17 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
             <img src={meal.imageUrl || fallbackImage} alt={meal.name} className="detail-image" />
             <div className="detail-content">
               <h1>{meal.name}</h1>
-              <p className="detail-description">{meal.description || 'No description'}</p>
+              <p className="detail-description">{meal.description || t('noDescription')}</p>
               <div className="detail-stats">
                 <span>🔥 {meal.calories} kcal</span>
                 <span>💪 {meal.protein}g</span>
-                <span>🌍 Sustainability {meal.sustainabilityScore ?? '-'}/10</span>
-                {recommendation && <span>⭐ Score {recommendation.score}</span>}
+                <span>🌍 {t('sustainability')} {meal.sustainabilityScore ?? '-'}/10</span>
+                {recommendation && <span>⭐ {t('score')} {recommendation.score}</span>}
               </div>
               {recommendation && <p className="detail-reason">{recommendation.reason}</p>}
 
               <div className="detail-block">
-                <h2>Ingredients</h2>
+                <h2>{t('ingredients')}</h2>
                 <ul>
                   {meal.ingredients?.map((ingredient) => (
                     <li key={ingredient.ingredientId}>
@@ -91,7 +93,7 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
               </div>
 
               <div className="detail-block">
-                <h2>Tags</h2>
+                <h2>{t('tags')}</h2>
                 <div className="detail-tags">
                   {meal.tags?.map((tag) => (
                     <span key={tag} className="detail-tag">
@@ -111,7 +113,7 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
                   })
                 }
               >
-                Add to cart
+                {t('addToCart')}
               </button>
             </div>
           </div>

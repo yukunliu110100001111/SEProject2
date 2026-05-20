@@ -1,4 +1,5 @@
 import { Eye, EyeOff } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 const PasswordField = ({
   value,
@@ -10,6 +11,9 @@ const PasswordField = ({
   onFocus,
   onBlur,
 }) => {
+  const { t } = useI18n();
+  const toggleLabel = visible ? t('hidePassword') : t('showPassword');
+
   return (
     <div className="password-field">
       <input
@@ -26,8 +30,8 @@ const PasswordField = ({
         type="button"
         className="password-toggle"
         onClick={onToggle}
-        aria-label={visible ? 'Hide password' : 'Show password'}
-        title={visible ? 'Hide password' : 'Show password'}
+        aria-label={toggleLabel}
+        title={toggleLabel}
       >
         {visible ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
       </button>

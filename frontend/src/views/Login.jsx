@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { login } from '../api/app';
 import { InteractiveMonsters } from '../components/monsters/InteractiveMonsters';
 import PasswordField from '../components/PasswordField';
+import { useI18n } from '../i18n';
 import { saveSession } from '../utils/storage';
 import { pickAuthBubbleMeals } from '../utils/authBubbleMeals';
 import './Login.css';
 
 const Login = ({ onLoginSuccess }) => {
+  const { language, setLanguage, t } = useI18n();
   const [form, setForm] = useState({
     username: '',
     password: '',
@@ -50,7 +52,7 @@ const Login = ({ onLoginSuccess }) => {
         data.role === 'admin' ? '/dashboard' : data.role === 'staff' ? '/staff' : '/home'
       );
     } catch (err) {
-      setError(err.message || 'Sign-in failed.');
+      setError(err.message || t('signInFailed'));
     } finally {
       setLoading(false);
     }
@@ -61,6 +63,14 @@ const Login = ({ onLoginSuccess }) => {
       <div className="login-background-brand" aria-hidden="true">
         G<span>r</span>een<span>B</span>ite
       </div>
+      <button
+        className="auth-language-toggle"
+        type="button"
+        onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
+        aria-label={t('language')}
+      >
+        {language === 'en' ? '中文' : 'EN'}
+      </button>
       <div className="login-blob"></div>
       <div className="login-shell">
         <div className="monster-panel">
@@ -84,17 +94,17 @@ const Login = ({ onLoginSuccess }) => {
           <div className="login-card-head">
             <div className="brand-logo">🍃</div>
             <div className="login-heading-group">
-              <span className="login-eyebrow">Member Access</span>
+              <span className="login-eyebrow">{t('memberAccess')}</span>
               <h2>G<span>r</span>een<span>B</span>ite</h2>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
             <div className="input-group">
-              <span className="input-label">Username</span>
+              <span className="input-label">{t('username')}</span>
               <input
                 type="text"
-                placeholder="Username"
+                placeholder={t('username')}
                 value={form.username}
                 onChange={(e) => handleChange('username', e.target.value)}
                 onFocus={handleFocus}
@@ -103,9 +113,9 @@ const Login = ({ onLoginSuccess }) => {
               />
             </div>
             <div className="input-group">
-              <span className="input-label">Password</span>
+              <span className="input-label">{t('password')}</span>
               <PasswordField
-                placeholder="Password"
+                placeholder={t('password')}
                 value={form.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 visible={showPassword}
@@ -126,13 +136,13 @@ const Login = ({ onLoginSuccess }) => {
             </div>
             {error && <p className="login-error">{error}</p>}
             <button type="submit" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? t('signingIn') : t('signIn')}
             </button>
           </form>
 
           <div className="login-footer">
             <Link to="/register" className="register-link">
-              Don&apos;t have an account? Create one
+              {t('noAccountCreate')}
             </Link>
           </div>
         </div>

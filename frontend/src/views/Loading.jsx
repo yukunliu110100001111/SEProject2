@@ -6,6 +6,7 @@ import {
   OrbitDots,
 } from 'premium-react-loaders';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useI18n } from '../i18n';
 import './Loading.css';
 
 const MIN_LOADING_MS = 3600;
@@ -13,6 +14,7 @@ const LOADING_LABEL_HOLD_MS = 1400;
 const EXIT_DELAY_MS = 900;
 
 const Loading = ({ auth, onConsumeTarget }) => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const startedAtRef = useRef(0);
@@ -167,12 +169,12 @@ const Loading = ({ auth, onConsumeTarget }) => {
 
         <div className="premium-loading-copy">
           <span className="premium-loading-kicker">GreenBite</span>
-          <h1>What would you like to eat today?</h1>
-          <p>We're lining up a few fresh ideas for your next meal.</p>
+          <h1>{t('loadingQuestion')}</h1>
+          <p>{t('loadingIdeas')}</p>
 
           <div className="premium-loading-status">
             <LoadingText
-              text={showFinalizing ? 'Finalizing' : 'Loading'}
+              text={showFinalizing ? t('finalizing') : t('loading')}
               animation="fade"
               showEllipsis
               dotCount={3}

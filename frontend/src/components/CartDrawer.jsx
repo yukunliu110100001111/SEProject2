@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createOrder } from '../api/app';
+import { useI18n } from '../i18n';
 import './CartDrawer.css';
 
 const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth }) => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +36,7 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
       onClose();
       navigate('/orders', { state: { createdOrderId: response.orderId } });
     } catch (err) {
-      setError(err.message || 'Order submission failed.');
+      setError(err.message || t('orderSubmissionFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -46,7 +48,7 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
 
       <aside className="cart-drawer">
         <div className="cart-header">
-          <h2>Cart</h2>
+          <h2>{t('cart')}</h2>
           <button className="close-btn" type="button" onClick={onClose}>
             &times;
           </button>
@@ -55,14 +57,14 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
         <div className="cart-items">
           {cart.length === 0 ? (
             <div className="empty-cart">
-              <p>Your cart is empty</p>
+              <p>{t('cartEmpty')}</p>
             </div>
           ) : (
             cart.map((item) => (
               <div key={item.mealId} className="cart-item">
                 <div className="item-info">
                   <h4>{item.name}</h4>
-                  <p>Sustainability {item.sustainabilityScore ?? '-'}/10</p>
+                  <p>{t('sustainability')} {item.sustainabilityScore ?? '-'}/10</p>
                   <div className="item-stats">
                     <span>🔥 {item.calories} kcal</span>
                     <span>💪 {item.protein}g</span>
@@ -92,11 +94,11 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
 
         <div className="cart-footer">
           <div className="summary-row">
-            <span>Total calories</span>
+            <span>{t('totalCalories')}</span>
             <strong>{totalCalories} kcal</strong>
           </div>
           <div className="summary-row summary-total">
-            <span>Total protein</span>
+            <span>{t('totalProtein')}</span>
             <strong>{totalProtein} g</strong>
           </div>
           {error && <p className="cart-error">{error}</p>}
@@ -106,7 +108,7 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
             disabled={cart.length === 0 || submitting}
             onClick={handleCheckout}
           >
-            {submitting ? 'Submitting...' : 'Place order'}
+            {submitting ? t('submitting') : t('placeOrder')}
           </button>
         </div>
       </aside>

@@ -4,15 +4,16 @@ import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import AiAssistantBubble from '../components/AiAssistantBubble';
 import MealCard from '../components/MealCard';
 import Navbar from '../components/Navbar';
+import { useI18n } from '../i18n';
 import './Home.css';
 
 const categories = [
-  'All',
-  'Low carbon',
-  'High protein',
-  'Plant-based',
-  'Light',
-  'Stock first',
+  { id: 'all', labelKey: 'all' },
+  { id: 'lowCarbon', labelKey: 'lowCarbon' },
+  { id: 'highProtein', labelKey: 'highProtein' },
+  { id: 'plantBased', labelKey: 'plantBased' },
+  { id: 'light', labelKey: 'light' },
+  { id: 'stockFirst', labelKey: 'stockFirst' },
 ];
 
 const hasTag = (meal, expectedTags) =>
@@ -21,27 +22,27 @@ const hasTag = (meal, expectedTags) =>
   );
 
 const matchesCategory = (meal, category, recommendation) => {
-  if (category === 'All') {
+  if (category === 'all') {
     return true;
   }
 
-  if (category === 'Low carbon') {
+  if (category === 'lowCarbon') {
     return hasTag(meal, ['low-carbon']) || Number(meal.sustainabilityScore || 0) >= 8;
   }
 
-  if (category === 'High protein') {
+  if (category === 'highProtein') {
     return hasTag(meal, ['high-protein']) || Number(meal.protein || 0) >= 25;
   }
 
-  if (category === 'Plant-based') {
+  if (category === 'plantBased') {
     return hasTag(meal, ['plant-based', 'vegetarian', 'vegan']);
   }
 
-  if (category === 'Light') {
+  if (category === 'light') {
     return Number(meal.calories || 0) > 0 && Number(meal.calories || 0) <= 450;
   }
 
-  if (category === 'Stock first') {
+  if (category === 'stockFirst') {
     return /stock|expiry/i.test(recommendation?.reason || '');
   }
 
@@ -51,7 +52,7 @@ const matchesCategory = (meal, category, recommendation) => {
 const matchesCategories = (meal, activeCategories, recommendation) => {
   if (
     activeCategories.length === 0 ||
-    activeCategories.includes('All')
+    activeCategories.includes('all')
   ) {
     return true;
   }
@@ -68,9 +69,10 @@ const Home = ({
   onLogout,
   onAddToCart,
 }) => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [activeCategories, setActiveCategories] = useState(['All']);
+  const [activeCategories, setActiveCategories] = useState(['all']);
   const [meals, setMeals] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ const Home = ({
         setRecommendations(recommendationList);
       } catch (err) {
         if (active) {
-          setError(err.message || 'Failed to load recommendations.');
+          setError(err.message || t('loadRecommendationsFailed'));
         }
       } finally {
         if (active) {
@@ -128,7 +130,7 @@ const Home = ({
     return () => {
       active = false;
     };
-  }, [auth.userId]);
+  }, [auth.userId, t]);
 
   const recommendationMap = useMemo(() => {
     const map = new Map();
@@ -164,14 +166,14 @@ const Home = ({
 
   const handleCategoryToggle = (category) => {
     setActiveCategories((current) => {
-      if (category === 'All') {
-        return ['All'];
+      if (category === 'all') {
+        return ['all'];
       }
 
-      const next = current.filter((item) => item !== 'All');
+      const next = current.filter((item) => item !== 'all');
       if (next.includes(category)) {
         const reduced = next.filter((item) => item !== category);
-        return reduced.length > 0 ? reduced : ['All'];
+        return reduced.length > 0 ? reduced : ['all'];
       }
 
       return [...next, category];
@@ -197,41 +199,41 @@ const Home = ({
             <div className="banner-panel">
               <div className="banner-glow banner-glow-left"></div>
               <div className="banner-glow banner-glow-right"></div>
-            <div className="banner-category-row" aria-label="Meal categories">
+            <div className="banner-category-row" aria-label={t('mealCategories')}>
               {categories.map((category) => (
                 <button
-                  key={category}
+                  key={category.id}
                   type="button"
-                  className={`category-pill ${activeCategories.includes(category) ? 'active' : ''}`}
-                  onClick={() => handleCategoryToggle(category)}
+                  className={`category-pill ${activeCategories.includes(category.id) ? 'active' : ''}`}
+                  onClick={() => handleCategoryToggle(category.id)}
                 >
-                  {category}
+                  {t(category.labelKey)}
                 </button>
               ))}
             </div>
             <div className="banner-search-wrapper">
               <input
                 type="text"
-                placeholder="Search"
+                placeholder={t('search')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <div className="banner-copy">
               <span className="banner-kicker">GreenBite</span>
-              <h1>Today&apos;s picks</h1>
+              <h1>{t('todaysPicks')}</h1>
               <div className="banner-actions">
                 <button type="button" className="banner-btn primary" onClick={() => window.scrollTo({ top: 720, behavior: 'smooth' })}>
-                  Browse
+                  {t('browse')}
                 </button>
                 <button type="button" className="banner-btn secondary" onClick={onOpenCart}>
-                  Cart
+                  {t('cart')}
                 </button>
               </div>
             </div>
             </div>
             {!loading && !error && filteredMeals.length > 0 && (
-              <section className="top-showcase-section" aria-label="Featured meals">
+              <section className="top-showcase-section" aria-label={t('featuredMeals')}>
                 <div className="showcase-track-shell">
                   <div className="showcase-marquee">
                     {[0, 1].map((groupIndex) => (
@@ -261,7 +263,7 @@ const Home = ({
                             />
                             <div className="showcase-overlay">
                               <strong>{meal.name}</strong>
-                              <span>Sustainability {meal.sustainabilityScore ?? '-'}/10</span>
+                              <span>{t('sustainability')} {meal.sustainabilityScore ?? '-'}/10</span>
                             </div>
                           </button>
                           );
@@ -279,22 +281,22 @@ const Home = ({
       <section className="hero-section">
         <div className="welcome-bar">
           <div className="user-welcome">
-            Hi, <span>{auth.username}</span>
+            {t('hiUser', { name: auth.username })}
           </div>
         </div>
         <div className="hero-title-area">
           <h1 className="hero-main-title">
-            Recommended for you
+            {t('recommendedForYou')}
           </h1>
         </div>
       </section>
 
       <section className="list-section">
         <div className="list-header">
-          <h2 className="list-title">Recommendations</h2>
+          <h2 className="list-title">{t('recommendations')}</h2>
         </div>
 
-        {loading && <div className="page-card">Loading recommendations...</div>}
+        {loading && <div className="page-card">{t('loadingRecommendations')}</div>}
         {error && <div className="page-card error-card">{error}</div>}
 
         {!loading && !error && (
@@ -328,7 +330,7 @@ const Home = ({
               })}
             </div>
           ) : (
-            <div className="page-card">No meals match the current filters.</div>
+            <div className="page-card">{t('noMealsMatch')}</div>
           )
         )}
       </section>

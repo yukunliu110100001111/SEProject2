@@ -13,6 +13,7 @@ import {
   uploadMealImage,
 } from '../api/app';
 import Navbar from '../components/Navbar';
+import { useI18n } from '../i18n';
 import './Staff.css';
 
 const emptyMealForm = {
@@ -71,6 +72,7 @@ const parseIngredientLinks = (value) =>
     .filter((item) => item.ingredientId && item.weight_g);
 
 const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
+  const { t } = useI18n();
   const [meals, setMeals] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [mealForm, setMealForm] = useState(emptyMealForm);
@@ -101,8 +103,8 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
   };
 
   useEffect(() => {
-    refreshData().catch((err) => setError(err.message || 'Failed to load staff data.'));
-  }, []);
+    refreshData().catch((err) => setError(err.message || t('failedLoadStaffData')));
+  }, [t]);
 
   const handleMealImageChange = (file) => {
     if (!file) {
@@ -111,12 +113,12 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
     }
 
     if (!isSupportedMealImage(file)) {
-      setError('Please choose a PNG, JPG, or WEBP image.');
+      setError(t('chooseMealImage'));
       return;
     }
 
     if (file.size > MAX_MEAL_IMAGE_SIZE_BYTES) {
-      setError('Meal image must be 5 MB or smaller.');
+      setError(t('mealImageTooLarge'));
       return;
     }
 
@@ -157,11 +159,11 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
       let targetMealId = mealForm.mealId;
       if (mealForm.mealId) {
         await updateMeal(mealForm.mealId, payload);
-        setMessage(`Meal #${mealForm.mealId} updated.`);
+        setMessage(t('mealUpdated', { id: mealForm.mealId }));
       } else {
         const created = await createMeal(payload);
         targetMealId = created.mealId;
-        setMessage('Meal created.');
+        setMessage(t('mealCreated'));
       }
       if (targetMealId && mealForm.imageFile) {
         await uploadMealImage(targetMealId, mealForm.imageFile);
@@ -172,7 +174,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
       }
       await refreshData();
     } catch (err) {
-      setError(err.message || 'Failed to save meal.');
+      setError(err.message || t('failedSaveMeal'));
     }
   };
 
@@ -201,10 +203,10 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
     setMessage('');
     try {
       await deleteMeal(mealId);
-      setMessage(`Meal #${mealId} deleted.`);
+      setMessage(t('mealDeleted', { id: mealId }));
       await refreshData();
     } catch (err) {
-      setError(err.message || 'Delete failed.');
+      setError(err.message || t('deleteFailed'));
     }
   };
 
@@ -225,7 +227,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
           currentQty_g: Number(ingredientForm.currentQty_g),
           expiryDate: ingredientForm.expiryDate,
         });
-        setMessage(`Ingredient #${ingredientForm.ingredientId} updated.`);
+        setMessage(t('ingredientUpdated', { id: ingredientForm.ingredientId }));
       } else {
         await createIngredient({
           name: ingredientForm.name,
@@ -233,13 +235,13 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
           expiryDate: ingredientForm.expiryDate,
           allergens,
         });
-        setMessage('Ingredient created.');
+        setMessage(t('ingredientCreated'));
       }
 
       setIngredientForm(emptyIngredientForm);
       await refreshData();
     } catch (err) {
-      setError(err.message || 'Failed to save ingredient.');
+      setError(err.message || t('failedSaveIngredient'));
     }
   };
 
@@ -249,47 +251,47 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
       <div className="staff-shell">
         <div className="staff-header">
-          <h1>Staff console</h1>
+          <h1>{t('staffConsole')}</h1>
         </div>
 
         {message && <div className="staff-message staff-success">{message}</div>}
         {error && <div className="staff-message staff-error">{error}</div>}
-        {loading && <div className="staff-message">Loading staff data...</div>}
+        {loading && <div className="staff-message">{t('loadingStaffData')}</div>}
 
         <div className="staff-grid">
           <section className="staff-card">
-            <h2>Meal management</h2>
+            <h2>{t('mealManagement')}</h2>
             <form className="staff-form" onSubmit={handleMealSubmit}>
               <input
                 type="text"
-                placeholder="Meal name"
+                placeholder={t('mealName')}
                 value={mealForm.name}
                 onChange={(e) => setMealForm((current) => ({ ...current, name: e.target.value }))}
                 required
               />
               <textarea
-                placeholder="Description"
+                placeholder={t('description')}
                 value={mealForm.description}
                 onChange={(e) => setMealForm((current) => ({ ...current, description: e.target.value }))}
                 rows="3"
               ></textarea>
               <input
                 type="number"
-                placeholder="Calories kcal"
+                placeholder={t('caloriesKcal')}
                 value={mealForm.calories}
                 onChange={(e) => setMealForm((current) => ({ ...current, calories: e.target.value }))}
                 required
               />
               <input
                 type="number"
-                placeholder="Protein g"
+                placeholder={t('proteinG')}
                 value={mealForm.protein}
                 onChange={(e) => setMealForm((current) => ({ ...current, protein: e.target.value }))}
                 required
               />
               <input
                 type="number"
-                placeholder="Sustainability 1-10"
+                placeholder={t('sustainabilityRange')}
                 value={mealForm.sustainabilityScore}
                 onChange={(e) =>
                   setMealForm((current) => ({ ...current, sustainabilityScore: e.target.value }))
@@ -297,7 +299,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
                 required
               />
               <label className="staff-file-field">
-                <span>Upload image</span>
+                <span>{t('uploadImage')}</span>
                 <input
                   ref={mealImageInputRef}
                   type="file"
@@ -307,31 +309,31 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
               </label>
               {mealForm.imageUrl && (
                 <div className="staff-image-preview">
-                  <img src={mealForm.imageUrl} alt="Meal preview" />
+                  <img src={mealForm.imageUrl} alt={t('mealPreview')} />
                   <button
                     type="button"
                     className="staff-clear-image"
                     onClick={clearMealImage}
                   >
-                    Clear image
+                    {t('clearImage')}
                   </button>
                 </div>
               )}
               <input
                 type="text"
-                placeholder="Tags, comma separated"
+                placeholder={t('tagsComma')}
                 value={mealForm.tagsInput}
                 onChange={(e) => setMealForm((current) => ({ ...current, tagsInput: e.target.value }))}
               />
               <input
                 type="text"
-                placeholder="Ingredients, format: 1:150, 2:80"
+                placeholder={t('ingredientsFormat')}
                 value={mealForm.ingredientsInput}
                 onChange={(e) =>
                   setMealForm((current) => ({ ...current, ingredientsInput: e.target.value }))
                 }
               />
-              <button type="submit">{mealForm.mealId ? 'Update meal' : 'Create meal'}</button>
+              <button type="submit">{mealForm.mealId ? t('updateMeal') : t('createMeal')}</button>
             </form>
 
             <div className="staff-list">
@@ -343,15 +345,15 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
                     </strong>
                     <p>{meal.description}</p>
                     {meal.imageUrl && (
-                      <p className="staff-image-hint">Image configured</p>
+                      <p className="staff-image-hint">{t('imageConfigured')}</p>
                     )}
                   </div>
                   <div className="staff-item-actions">
                     <button type="button" onClick={() => handleEditMeal(meal)}>
-                      Edit
+                      {t('edit')}
                     </button>
                     <button type="button" onClick={() => handleDeleteMeal(meal.mealId)}>
-                      Delete
+                      {t('delete')}
                     </button>
                   </div>
                 </div>
@@ -360,11 +362,11 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
           </section>
 
           <section className="staff-card">
-            <h2>Ingredients & stock</h2>
+            <h2>{t('ingredientsStock')}</h2>
             <form className="staff-form" onSubmit={handleIngredientSubmit}>
               <input
                 type="number"
-                placeholder="Ingredient ID, leave empty to create"
+                placeholder={t('ingredientIdHint')}
                 value={ingredientForm.ingredientId}
                 onChange={(e) =>
                   setIngredientForm((current) => ({ ...current, ingredientId: e.target.value }))
@@ -372,14 +374,14 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
               />
               <input
                 type="text"
-                placeholder="Ingredient name"
+                placeholder={t('ingredientName')}
                 value={ingredientForm.name}
                 onChange={(e) => setIngredientForm((current) => ({ ...current, name: e.target.value }))}
                 required
               />
               <input
                 type="number"
-                placeholder="Stock in grams"
+                placeholder={t('stockInGrams')}
                 value={ingredientForm.currentQty_g}
                 onChange={(e) =>
                   setIngredientForm((current) => ({ ...current, currentQty_g: e.target.value }))
@@ -396,13 +398,13 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
               />
               <input
                 type="text"
-                placeholder="Allergens, comma separated"
+                placeholder={t('allergensComma')}
                 value={ingredientForm.allergensInput}
                 onChange={(e) =>
                   setIngredientForm((current) => ({ ...current, allergensInput: e.target.value }))
                 }
               />
-              <button type="submit">{ingredientForm.ingredientId ? 'Update ingredient' : 'Create ingredient'}</button>
+              <button type="submit">{ingredientForm.ingredientId ? t('updateIngredient') : t('createIngredient')}</button>
             </form>
             <div className="staff-list">
               {ingredientList.map((ingredient) => (
@@ -415,7 +417,7 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
                       {ingredient.currentQty_g ?? 0} g · {ingredient.stockStatus || 'normal'}
                     </p>
                     <p>
-                      {ingredient.expiryDate || 'No expiry'} · {(ingredient.allergens || []).join(', ') || 'No allergens'}
+                      {ingredient.expiryDate || t('noExpiry')} · {(ingredient.allergens || []).join(', ') || t('noAllergens')}
                     </p>
                   </div>
                   <button
@@ -431,11 +433,11 @@ const Staff = ({ auth, cartCount, onOpenCart, onLogout }) => {
                           allergensInput: (detail.allergens || []).join(', '),
                         });
                       } catch (err) {
-                        setError(err.message || 'Failed to load ingredient detail.');
+                        setError(err.message || t('failedLoadIngredientDetail'));
                       }
                     }}
                   >
-                    Fill form
+                    {t('fillForm')}
                   </button>
                 </div>
               ))}

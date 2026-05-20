@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getOrders, getUser, updatePreferences, updateUser } from '../api/app';
 import Navbar from '../components/Navbar';
+import { useI18n } from '../i18n';
 import './Profile.css';
 
 const parseAllergens = (value) =>
@@ -10,6 +11,7 @@ const parseAllergens = (value) =>
     .filter(Boolean);
 
 const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
+  const { t } = useI18n();
   const [profile, setProfile] = useState({
     username: auth.username || '',
     targetCalories: 2000,
@@ -62,7 +64,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
         setOrders(orderData.items || []);
       } catch (err) {
         if (active) {
-          setError(err.message || 'Failed to load profile.');
+          setError(err.message || t('failedLoadProfile'));
         }
       } finally {
         if (active) {
@@ -75,7 +77,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
     return () => {
       active = false;
     };
-  }, [auth.userId]);
+  }, [auth.userId, t]);
 
   const handleChange = (key, value) => {
     setProfile((current) => ({ ...current, [key]: value }));
@@ -97,9 +99,9 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
       });
       localStorage.setItem('greenbite_username', profile.username);
       onAuthRefresh?.();
-      setMessage('Profile and dietary preferences updated.');
+      setMessage(t('profileUpdated'));
     } catch (err) {
-      setError(err.message || 'Save failed.');
+      setError(err.message || t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -116,11 +118,11 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
 
       <div className="profile-content">
         <div className="profile-section stats-section">
-          <h2>Overview</h2>
+          <h2>{t('overview')}</h2>
           <div className="stats-mini-grid">
             <div className="mini-card">
               <div className="mini-info">
-                <span>Total calories</span>
+                <span>{t('totalCalories')}</span>
                 <strong>
                   {achievements.totalCalories} <span>kcal</span>
                 </strong>
@@ -129,7 +131,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
             </div>
             <div className="mini-card">
               <div className="mini-info">
-                <span>Total protein</span>
+                <span>{t('totalProtein')}</span>
                 <strong>
                   {achievements.totalProtein} <span>g</span>
                 </strong>
@@ -138,9 +140,9 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
             </div>
             <div className="mini-card">
               <div className="mini-info">
-                <span>Orders placed</span>
+                <span>{t('ordersPlaced')}</span>
                 <strong>
-                  {achievements.orderCount} <span>orders</span>
+                  {achievements.orderCount} <span>{t('ordersUnit')}</span>
                 </strong>
               </div>
               <div className="mini-icon">📦</div>
@@ -149,13 +151,13 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
         </div>
 
         <div className="profile-section settings-section">
-          <h2>Preferences</h2>
+          <h2>{t('preferences')}</h2>
           {loading ? (
-            <div className="message-box">Loading profile...</div>
+            <div className="message-box">{t('loadingProfile')}</div>
           ) : (
             <form onSubmit={handleSubmit} className="pref-form">
               <div className="form-item">
-                <label>Username</label>
+                <label>{t('username')}</label>
                 <input
                   type="text"
                   value={profile.username}
@@ -164,7 +166,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
                 />
               </div>
               <div className="form-item">
-                <label>Daily calorie target</label>
+                <label>{t('dailyCalorieTarget')}</label>
                 <input
                   type="number"
                   value={profile.targetCalories}
@@ -173,7 +175,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
                 />
               </div>
               <div className="form-item">
-                <label>Daily protein target</label>
+                <label>{t('dailyProteinTarget')}</label>
                 <input
                   type="number"
                   value={profile.targetProtein}
@@ -182,17 +184,17 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
                 />
               </div>
               <div className="form-item">
-                <label>Diet preference</label>
+                <label>{t('dietPreference')}</label>
                 <select
                   value={String(profile.isVegetarian)}
                   onChange={(e) => handleChange('isVegetarian', e.target.value === 'true')}
                 >
-                  <option value="false">Balanced</option>
-                  <option value="true">Vegetarian first</option>
+                  <option value="false">{t('balanced')}</option>
+                  <option value="true">{t('vegetarianFirst')}</option>
                 </select>
               </div>
               <div className="form-item">
-                <label>Allergen restrictions</label>
+                <label>{t('allergenRestrictions')}</label>
                 <input
                   type="text"
                   placeholder="nut, fish, soy"
@@ -203,7 +205,7 @@ const Profile = ({ auth, cartCount, onOpenCart, onLogout, onAuthRefresh }) => {
               {message && <div className="message-box success-box">{message}</div>}
               {error && <div className="message-box error-box">{error}</div>}
               <button type="submit" className="save-btn" disabled={saving}>
-                {saving ? 'Saving...' : 'Save preferences'}
+                {saving ? t('saving') : t('savePreferences')}
               </button>
             </form>
           )}

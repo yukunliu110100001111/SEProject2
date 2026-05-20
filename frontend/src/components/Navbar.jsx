@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Languages } from 'lucide-react';
+import { useI18n } from '../i18n';
 import './Navbar.css';
 
 const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
+  const { language, setLanguage, t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const role = auth?.role;
-  const username = auth?.username || 'Guest';
+  const username = auth?.username || t('guest');
 
   const isActive = (path) => (location.pathname === path ? 'active-link' : '');
 
@@ -19,35 +22,35 @@ const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
       <ul className="nav-links">
         <li>
           <Link to="/home" className={isActive('/home')}>
-            Discover
+            {t('discover')}
           </Link>
         </li>
         <li>
           <Link to="/orders" className={isActive('/orders')}>
-            Orders
+            {t('orders')}
           </Link>
         </li>
         <li>
           <Link to="/customize" className={isActive('/customize')}>
-            Customize
+            {t('customize')}
           </Link>
         </li>
         <li>
           <Link to="/profile" className={isActive('/profile')}>
-            Profile
+            {t('profile')}
           </Link>
         </li>
         {(role === 'staff' || role === 'admin') && (
           <li>
             <Link to="/staff" className={`staff-link ${isActive('/staff')}`}>
-              Staff
+              {t('staff')}
             </Link>
           </li>
         )}
         {role === 'admin' && (
           <li>
             <Link to="/dashboard" className={`admin-link ${isActive('/dashboard')}`}>
-              Dashboard
+              {t('dashboard')}
             </Link>
           </li>
         )}
@@ -55,14 +58,24 @@ const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
 
       <div className="nav-actions">
         <span className="user-name-tag" title={username}>
-          {role || 'user'} · {username}
+          {role || t('user')} · {username}
         </span>
-        <button className="cart-icon" type="button" onClick={onOpenCart} title="Cart">
+        <button
+          className="language-toggle"
+          type="button"
+          onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')}
+          title={t('language')}
+          aria-label={t('language')}
+        >
+          <Languages size={16} />
+          <span>{language === 'en' ? '中文' : 'EN'}</span>
+        </button>
+        <button className="cart-icon" type="button" onClick={onOpenCart} title={t('cart')}>
           <span className="icon-emoji">🛒</span>
           {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
         </button>
         <button className="logout-btn" type="button" onClick={onLogout}>
-          Sign out
+          {t('signOut')}
         </button>
       </div>
     </nav>

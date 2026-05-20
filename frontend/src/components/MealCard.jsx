@@ -1,15 +1,19 @@
 import React from 'react';
+import { useI18n } from '../i18n';
 import './MealCard.css';
 
 const fallbackImage =
   'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=500';
 
-const MealCard = ({ meal, onAdd, onClick, recommendation }) => (
+const MealCard = ({ meal, onAdd, onClick, recommendation }) => {
+  const { t } = useI18n();
+
+  return (
   <article className="meal-card">
     <button className="meal-card-hitbox" type="button" onClick={onClick}>
       <div className="meal-image-wrapper">
         <img src={meal.imageUrl || fallbackImage} alt={meal.name} className="meal-image" />
-        <div className="carbon-tag">Sustainability {meal.sustainabilityScore ?? '-'}/10</div>
+        <div className="carbon-tag">{t('sustainability')} {meal.sustainabilityScore ?? '-'}/10</div>
       </div>
 
       <div className="meal-info">
@@ -46,11 +50,12 @@ const MealCard = ({ meal, onAdd, onClick, recommendation }) => (
       className="add-btn"
       type="button"
       onClick={onAdd}
-      aria-label={`Add ${meal.name}`}
+      aria-label={t('addMeal', { name: meal.name })}
     >
-      Add to cart
+      {t('addToCart')}
     </button>
   </article>
-);
+  );
+};
 
 export default MealCard;

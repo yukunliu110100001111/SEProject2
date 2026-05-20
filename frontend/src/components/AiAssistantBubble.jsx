@@ -1,30 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { confirmAssistantAction, streamAssistantChat } from '../api/app';
+import { useI18n } from '../i18n';
 import './AiAssistantBubble.css';
 
 const suggestedPrompts = [
-  'Recommend 3 meals',
-  'Why is the top result first?',
-  'Check order 1',
-  'Search chicken',
+  'promptRecommend',
+  'promptWhyTop',
+  'promptCheckOrder',
+  'promptSearchChicken',
 ];
 
 const ambientPrompts = [
-  'Want to see the best picks for you today?',
-  'I can check your order status.',
-  'Tap me for three quick picks.',
-  'Looking for something lighter?',
-  'You can search chicken too.',
-  'Want a higher-protein option today?',
+  'ambientBestPicks',
+  'ambientOrderStatus',
+  'ambientQuickPicks',
+  'ambientLighter',
+  'ambientSearchChicken',
+  'ambientProtein',
 ];
 
 const AiAssistantBubble = ({ auth }) => {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [ambientText, setAmbientText] = useState('');
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `Hi, ${auth?.username || 'there'}`,
+      content: t('helloUser', { name: auth?.username || t('there') }),
     },
   ]);
   const [input, setInput] = useState('');
@@ -68,7 +70,7 @@ const AiAssistantBubble = ({ auth }) => {
       ambientTimerRef.current = window.setTimeout(() => {
         const nextText =
           ambientPrompts[Math.floor(Math.random() * ambientPrompts.length)];
-        setAmbientText(nextText);
+        setAmbientText(t(nextText));
         ambientHideTimerRef.current = window.setTimeout(() => {
           setAmbientText('');
           scheduleAmbientPrompt();
@@ -78,7 +80,7 @@ const AiAssistantBubble = ({ auth }) => {
 
     scheduleAmbientPrompt();
     return clearAmbientTimers;
-  }, [isOpen]);
+  }, [isOpen, t]);
 
   const submitMessage = async (content) => {
     const nextContent = content.trim();
@@ -118,7 +120,7 @@ const AiAssistantBubble = ({ auth }) => {
                 index === streamIndex
                   ? {
                       ...message,
-                      content: data.summary || 'Please confirm this action.',
+                      content: data.summary || t('confirmActionPrompt'),
                       pendingAction: data,
                       isStreaming: false,
                     }
@@ -134,7 +136,7 @@ const AiAssistantBubble = ({ auth }) => {
                 index === streamIndex
                   ? {
                       ...message,
-                      content: data.reply || message.content || 'No response available right now.',
+                      content: data.reply || message.content || t('noResponse'),
                       pendingAction: data.pendingAction || null,
                       isStreaming: false,
                     }
@@ -145,7 +147,7 @@ const AiAssistantBubble = ({ auth }) => {
           }
 
           if (event === 'error') {
-            setError(data.message || 'AI assistant is temporarily unavailable.');
+            setError(data.message || t('aiUnavailable'));
             setMessages((current) =>
               current.map((message, index) =>
                 index === streamIndex
@@ -154,7 +156,7 @@ const AiAssistantBubble = ({ auth }) => {
                       content:
                         message.content ||
                         data.message ||
-                        'AI assistant is temporarily unavailable.',
+                        t('aiUnavailable'),
                       isStreaming: false,
                     }
                   : message
@@ -164,7 +166,7 @@ const AiAssistantBubble = ({ auth }) => {
         },
       });
     } catch (err) {
-      setError(err.message || 'AI assistant is temporarily unavailable.');
+      setError(err.message || t('aiUnavailable'));
       setMessages((current) =>
         current.map((message, index) =>
           index === streamIndex ? { ...message, isStreaming: false } : message
@@ -202,13 +204,13 @@ const AiAssistantBubble = ({ auth }) => {
         ...current,
         {
           role: 'assistant',
-          content: result.reply || 'Done.',
+          content: result.reply || t('assistantDone'),
           pendingAction: null,
           isStreaming: false,
         },
       ]);
     } catch (err) {
-      setError(err.message || 'Confirmation failed.');
+      setError(err.message || t('confirmationFailed'));
     } finally {
       setConfirmingActionId('');
     }
@@ -223,14 +225,14 @@ const AiAssistantBubble = ({ auth }) => {
           setAmbientText('');
           setIsOpen(true);
         }}
-        aria-label="Open AI assistant"
+        aria-label={t('openAssistant')}
       >
         <span className={`ai-bubble-ambient ${ambientText ? 'visible' : ''}`}>
           {ambientText}
         </span>
         <span className="ai-bubble-icon">AI</span>
         <span className="ai-bubble-copy">
-          <strong>Assistant</strong>
+          <strong>{t('assistant')}</strong>
         </span>
       </button>
 
@@ -243,22 +245,22 @@ const AiAssistantBubble = ({ auth }) => {
             <header className="ai-bubble-header">
               <div>
                 <span className="ai-bubble-kicker">GreenBite</span>
-                <h2>Assistant</h2>
+                <h2>{t('assistant')}</h2>
               </div>
               <button
                 type="button"
                 className="ai-bubble-close"
                 onClick={() => setIsOpen(false)}
-                aria-label="Close AI assistant"
+                aria-label={t('closeAssistant')}
               >
                 ×
               </button>
             </header>
 
             <div className="ai-bubble-suggestions">
-              {suggestedPrompts.map((prompt) => (
-                <button key={prompt} type="button" onClick={() => submitMessage(prompt)}>
-                  {prompt}
+              {suggestedPrompts.map((promptKey) => (
+                <button key={promptKey} type="button" onClick={() => submitMessage(t(promptKey))}>
+                  {t(promptKey)}
                 </button>
               ))}
             </div>
@@ -270,9 +272,9 @@ const AiAssistantBubble = ({ auth }) => {
                   className={`ai-bubble-message ${message.role === 'user' ? 'user' : 'assistant'} ${message.isStreaming ? 'typing' : ''}`}
                 >
                   <div className="ai-bubble-message-head">
-                    <span>{message.role === 'user' ? 'You' : 'AI'}</span>
+                    <span>{message.role === 'user' ? t('you') : 'AI'}</span>
                     <span>
-                      {message.pendingAction ? 'Pending' : message.isStreaming ? 'Streaming' : 'Done'}
+                      {message.pendingAction ? t('pending') : message.isStreaming ? t('streaming') : t('done')}
                     </span>
                   </div>
                   {message.isStreaming && !message.content ? (
@@ -298,10 +300,10 @@ const AiAssistantBubble = ({ auth }) => {
                         }
                       >
                         {message.pendingAction.confirmed
-                          ? 'Confirmed'
+                          ? t('confirmed')
                           : confirmingActionId === message.pendingAction.actionId
-                            ? 'Confirming...'
-                            : 'Confirm'}
+                            ? t('confirming')
+                            : t('confirm')}
                       </button>
                     </div>
                   )}
@@ -321,12 +323,12 @@ const AiAssistantBubble = ({ auth }) => {
               <textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Type a message"
+                placeholder={t('typeMessage')}
                 rows={3}
               />
               <div className="ai-bubble-form-actions">
                 <button type="submit" disabled={loading || !input.trim()}>
-                  {loading ? 'Sending...' : 'Send'}
+                  {loading ? t('sending') : t('send')}
                 </button>
               </div>
             </form>

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { getDashboard, getSustainabilityReport } from '../api/app';
 import Navbar from '../components/Navbar';
+import { useI18n } from '../i18n';
 import './Dashboard.css';
 
 const getMealOrderCount = (meal) => meal.orders ?? meal.orderCount ?? meal.count ?? 0;
 
 const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
+  const { t } = useI18n();
   const [data, setData] = useState(null);
   const [report, setReport] = useState(null);
   const [error, setError] = useState('');
@@ -23,7 +25,7 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
         }
       } catch (err) {
         if (active) {
-          setError(err.message || 'Failed to load dashboard.');
+          setError(err.message || t('failedLoadDashboard'));
         }
       }
     };
@@ -32,7 +34,7 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   const handleLoadReport = async () => {
     setLoadingReport(true);
@@ -41,7 +43,7 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
       const nextReport = await getSustainabilityReport();
       setReport(nextReport);
     } catch (err) {
-      setReportError(err.message || 'Failed to generate report.');
+      setReportError(err.message || t('failedGenerateReport'));
     } finally {
       setLoadingReport(false);
     }
@@ -60,7 +62,7 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
       <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="dashboard-header">
-        <h1>Operations dashboard</h1>
+        <h1>{t('operationsDashboard')}</h1>
       </div>
 
       {error && <div className="dashboard-message error-message">{error}</div>}
@@ -68,7 +70,7 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
       {data && (
         <div className="dashboard-grid">
           <div className="admin-card stats-card">
-            <h2>Low-carbon adoption</h2>
+            <h2>{t('lowCarbonAdoption')}</h2>
             <div className="gauge-container">
               <div className="gauge-value">{Math.round(Number(data.lowCarbonRate || 0) * 100)}%</div>
               <div className="gauge-bar">
@@ -81,14 +83,14 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
           </div>
 
           <div className="admin-card">
-            <h2>Top Meals</h2>
+            <h2>{t('topMeals')}</h2>
             <div className="rank-list">
               {data.topMeals.map((meal, index) => (
                 <div key={`${meal.name}-${index}`} className="rank-item">
                   <span className="rank-number">0{index + 1}</span>
                   <div className="rank-info">
                     <div className="rank-name">{meal.name}</div>
-                    <div className="rank-count">{getMealOrderCount(meal)} orders</div>
+                    <div className="rank-count">{getMealOrderCount(meal)} {t('ordersUnit')}</div>
                   </div>
                 </div>
               ))}
@@ -96,7 +98,7 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
           </div>
 
           <div className="admin-card">
-            <h2>Inventory status</h2>
+            <h2>{t('inventoryStatus')}</h2>
             <div className="stock-list">
               {data.stockUsage.map((item, index) => (
                 <div key={`${item.name}-${index}`} className="stock-item">
@@ -123,12 +125,12 @@ const Dashboard = ({ auth, cartCount, onOpenCart, onLogout }) => {
 
       <div className="report-panel">
         <button className="report-btn" type="button" onClick={handleLoadReport} disabled={loadingReport}>
-          {loadingReport ? 'Generating...' : 'Generate sustainability report'}
+          {loadingReport ? t('generating') : t('generateReport')}
         </button>
         {reportError && <p className="dashboard-message error-message">{reportError}</p>}
         {report && (
           <div className="report-card">
-            <h3>Report</h3>
+            <h3>{t('report')}</h3>
             <p>{report.generatedAt}</p>
             <p>{report.summary}</p>
             <p>{Math.round(Number(report.lowCarbonRate || 0) * 100)}%</p>
