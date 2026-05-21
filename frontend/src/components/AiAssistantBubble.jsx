@@ -31,6 +31,29 @@ const assistantAnimationEvents = [
   'jumpClick',
 ];
 
+const parseAssistantCommand = (content) => {
+  const normalized = (content || '').trim();
+  if (!normalized.startsWith('{')) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(normalized);
+  } catch {
+    return null;
+  }
+};
+
+const isToolCommandContent = (content) => {
+  const normalized = (content || '').trim();
+  if (/^\{\s*"type"\s*:\s*"tool(?:_call)?"/.test(normalized)) {
+    return true;
+  }
+
+  const command = parseAssistantCommand(content);
+  return command?.type === 'tool' || command?.type === 'tool_call';
+};
+
 const AiAssistantBubble = ({ auth }) => {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
@@ -121,8 +144,10 @@ const AiAssistantBubble = ({ auth }) => {
       return clearAmbientTimers;
     }
 
-    const scheduleAmbientPrompt = () => {
-      const nextDelay = 9000 + Math.floor(Math.random() * 9000);
+    const scheduleAmbientPrompt = (isInitial = false) => {
+      const nextDelay = isInitial
+        ? 2500 + Math.floor(Math.random() * 2500)
+        : 9000 + Math.floor(Math.random() * 9000);
       ambientTimerRef.current = window.setTimeout(() => {
         const nextPrompt =
           ambientPrompts[Math.floor(Math.random() * ambientPrompts.length)];
@@ -134,7 +159,7 @@ const AiAssistantBubble = ({ auth }) => {
       }, nextDelay);
     };
 
-    scheduleAmbientPrompt();
+    scheduleAmbientPrompt(true);
     return clearAmbientTimers;
   }, [isOpen, t]);
 
@@ -192,7 +217,9 @@ const AiAssistantBubble = ({ auth }) => {
                 index === streamIndex
                   ? {
                       ...message,
-                      content: data.reply || message.content || t('noResponse'),
+                      content: isToolCommandContent(data.reply || message.content)
+                        ? t('assistantCheckingData')
+                        : data.reply || message.content || t('noResponse'),
                       pendingAction: data.pendingAction || null,
                       isStreaming: false,
                     }
@@ -345,6 +372,8 @@ const AiAssistantBubble = ({ auth }) => {
                       <span></span>
                       <span></span>
                     </div>
+                  ) : isToolCommandContent(message.content) ? (
+                    <p>{t('assistantCheckingData')}</p>
                   ) : (
                     <p>{message.content || '...'}</p>
                   )}

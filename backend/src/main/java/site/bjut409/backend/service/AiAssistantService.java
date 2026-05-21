@@ -82,7 +82,7 @@ public class AiAssistantService {
                 String answer = command.path("answer").asText();
                 return finalizeReply(answer.isBlank() ? content : answer, toolCalls, eventSink);
             }
-            if (!"tool_call".equals(type)) {
+            if (!isToolCall(type)) {
                 if ("propose_action".equals(type)) {
                     return proposeAction(actor, command, toolCalls, eventSink);
                 }
@@ -181,6 +181,10 @@ public class AiAssistantService {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    private boolean isToolCall(String type) {
+        return "tool_call".equals(type) || "tool".equals(type);
     }
 
     private String normalizeRole(String role) {

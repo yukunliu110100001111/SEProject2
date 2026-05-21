@@ -25,6 +25,7 @@ import java.util.Queue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,20 +34,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class AiAssistantIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private final MockMvc mockMvc;
+    private final ObjectMapper objectMapper;
+    private final DemoDataService demoDataService;
+    private final TokenStore tokenStore;
+    private final StubArkChatClient stubArkChatClient;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private DemoDataService demoDataService;
-
-    @Autowired
-    private TokenStore tokenStore;
-
-    @Autowired
-    private StubArkChatClient stubArkChatClient;
+    AiAssistantIntegrationTest(MockMvc mockMvc,
+                               ObjectMapper objectMapper,
+                               DemoDataService demoDataService,
+                               TokenStore tokenStore,
+                               StubArkChatClient stubArkChatClient) {
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
+        this.demoDataService = demoDataService;
+        this.tokenStore = tokenStore;
+        this.stubArkChatClient = stubArkChatClient;
+    }
 
     @BeforeEach
     void setUp() {
@@ -78,8 +83,35 @@ class AiAssistantIntegrationTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 
         JsonNode root = objectMapper.readTree(body).get("data");
-        assertEquals("Based on your preferences, meal 2 is the best current recommendation.", root.get("reply").asText());
-        assertEquals("get_recommendations", root.get("toolCalls").get(0).asText());
+        assertEquals("Based on your preferences, meal 2 is the best current recommendation.", root.get("reply").asString());
+        assertEquals("get_recommendations", root.get("toolCalls").get(0).asString());
+    }
+
+    @Test
+    void ai_chat_should_accept_tool_type_alias() throws Exception {
+        stubArkChatClient.enqueue("""
+                {"type":"tool","tool":"get_recommendations","arguments":{"userId":1}}
+                """);
+        stubArkChatClient.enqueue("""
+                {"type":"final","answer":"Chicken Salad is first because it best matches your current preferences."}
+                """);
+
+        String body = mockMvc.perform(post("/ai/chat")
+                        .header("Authorization", "Bearer " + tokenOf("customer1", "123456"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "messages":[
+                                    {"role":"user","content":"Why is the top result first?"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        JsonNode root = objectMapper.readTree(body).get("data");
+        assertEquals("Chicken Salad is first because it best matches your current preferences.", root.get("reply").asString());
+        assertEquals("get_recommendations", root.get("toolCalls").get(0).asString());
     }
 
     @Test
@@ -103,7 +135,7 @@ class AiAssistantIntegrationTest {
 
         JsonNode pending = objectMapper.readTree(chatBody).get("data").get("pendingAction");
         assertNotNull(pending);
-        String actionId = pending.get("actionId").asText();
+        String actionId = pending.get("actionId").asString();
 
         String confirmBody = mockMvc.perform(post("/ai/actions/" + actionId + "/confirm")
                         .header("Authorization", "Bearer " + tokenOf("customer1", "123456")))
@@ -111,7 +143,7 @@ class AiAssistantIntegrationTest {
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 
         assertEquals("Your dietary preferences have been updated.",
-                objectMapper.readTree(confirmBody).get("data").get("reply").asText());
+                objectMapper.readTree(confirmBody).get("data").get("reply").asString());
 
         String userBody = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -123,7 +155,7 @@ class AiAssistantIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        String token = objectMapper.readTree(userBody).get("data").get("token").asText();
+        String token = objectMapper.readTree(userBody).get("data").get("token").asString();
 
         String profileBody = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/users/1")
                         .header("Authorization", "Bearer " + token))
@@ -132,7 +164,7 @@ class AiAssistantIntegrationTest {
         JsonNode preferences = objectMapper.readTree(profileBody).get("data").get("preferences");
         assertEquals(1700, preferences.get("targetCalories").asInt());
         assertEquals(95, preferences.get("targetProtein").asInt());
-        assertEquals(true, preferences.get("isVegetarian").asBoolean());
+        assertTrue(preferences.get("isVegetarian").asBoolean());
     }
 
     private String tokenOf(String username, String password) throws Exception {
@@ -147,10 +179,11 @@ class AiAssistantIntegrationTest {
                         .content(payload))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        return objectMapper.readTree(body).get("data").get("token").asText();
+        return objectMapper.readTree(body).get("data").get("token").asString();
     }
 
     @TestConfiguration
+    @SuppressWarnings("unused")
     static class StubAiConfig {
         @Bean
         @Primary
@@ -173,6 +206,8 @@ class AiAssistantIntegrationTest {
 
         @Override
         public String chat(List<Map<String, String>> messages, String model) {
+            assertNotNull(messages);
+            assertNotNull(model);
             String next = responses.poll();
             if (next == null) {
                 throw new IllegalStateException("No stubbed AI response left");
