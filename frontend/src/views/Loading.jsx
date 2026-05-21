@@ -8,7 +8,7 @@ import {
 } from '../utils/loadingAnimations';
 import './Loading.css';
 
-const MIN_LOADING_MS = 3600;
+const MIN_LOADING_MS = 1800;
 
 const Loading = ({ auth, onConsumeTarget }) => {
   const navigate = useNavigate();
