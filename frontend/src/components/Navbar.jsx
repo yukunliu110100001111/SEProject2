@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Languages } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { pickPageLoadingSrc } from '../utils/loadingAnimations';
 import './Navbar.css';
 
 const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
@@ -12,46 +13,81 @@ const Navbar = ({ cartCount = 0, onOpenCart, onLogout, auth }) => {
   const username = auth?.username || t('guest');
 
   const isActive = (path) => (location.pathname === path ? 'active-link' : '');
+  const goToPage = (path) => {
+    if (location.pathname === path) {
+      return;
+    }
+    navigate('/loading', {
+      state: {
+        nextPath: path,
+        loadingSrc: pickPageLoadingSrc(),
+      },
+    });
+  };
 
   return (
     <nav className="top-navbar">
-      <button className="nav-logo" type="button" onClick={() => navigate('/home')}>
+      <button className="nav-logo" type="button" onClick={() => goToPage('/home')}>
         Green<span>Bite</span>
       </button>
 
       <ul className="nav-links">
         <li>
-          <Link to="/home" className={isActive('/home')}>
+          <button
+            type="button"
+            className={`nav-link-button ${isActive('/home')}`}
+            onClick={() => goToPage('/home')}
+          >
             {t('discover')}
-          </Link>
+          </button>
         </li>
         <li>
-          <Link to="/orders" className={isActive('/orders')}>
+          <button
+            type="button"
+            className={`nav-link-button ${isActive('/orders')}`}
+            onClick={() => goToPage('/orders')}
+          >
             {t('orders')}
-          </Link>
+          </button>
         </li>
         <li>
-          <Link to="/customize" className={isActive('/customize')}>
+          <button
+            type="button"
+            className={`nav-link-button ${isActive('/customize')}`}
+            onClick={() => goToPage('/customize')}
+          >
             {t('customize')}
-          </Link>
+          </button>
         </li>
         <li>
-          <Link to="/profile" className={isActive('/profile')}>
+          <button
+            type="button"
+            className={`nav-link-button ${isActive('/profile')}`}
+            onClick={() => goToPage('/profile')}
+          >
             {t('profile')}
-          </Link>
+          </button>
         </li>
         {(role === 'staff' || role === 'admin') && (
           <li>
-            <Link to="/staff" className={`staff-link ${isActive('/staff')}`}>
+            <button
+              type="button"
+              className={`nav-link-button staff-link ${isActive('/staff')}`}
+              onClick={() => goToPage('/staff')}
+            >
               {t('staff')}
-            </Link>
+            </button>
           </li>
         )}
         {role === 'admin' && (
           <li>
-            <Link to="/dashboard" className={`admin-link ${isActive('/dashboard')}`}>
+            <button
+              type="button"
+              className={`nav-link-button admin-link ${isActive('/dashboard')}`}
+              onClick={() => goToPage('/dashboard')}
+            >
               {t('dashboard')}
-            </Link>
+            </button>
           </li>
         )}
       </ul>

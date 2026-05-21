@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createOrder } from '../api/app';
 import { useI18n } from '../i18n';
+import { pickPageLoadingSrc } from '../utils/loadingAnimations';
 import './CartDrawer.css';
 
 const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth }) => {
@@ -34,7 +35,13 @@ const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onClearCart, auth
       });
       onClearCart();
       onClose();
-      navigate('/orders', { state: { createdOrderId: response.orderId } });
+      navigate('/loading', {
+        state: {
+          nextPath: '/orders',
+          loadingSrc: pickPageLoadingSrc(),
+          routeState: { createdOrderId: response.orderId },
+        },
+      });
     } catch (err) {
       setError(err.message || t('orderSubmissionFailed'));
     } finally {

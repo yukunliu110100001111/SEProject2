@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getMealDetail, getMeals, getRecommendations } from '../api/app';
 import Navbar from '../components/Navbar';
 import { useI18n } from '../i18n';
+import { pickPageLoadingSrc } from '../utils/loadingAnimations';
 import './MealDetail.css';
 
 const fallbackImage =
@@ -61,7 +62,18 @@ const MealDetail = ({ auth, cartCount, onOpenCart, onLogout, onAddToCart }) => {
       <Navbar auth={auth} cartCount={cartCount} onOpenCart={onOpenCart} onLogout={onLogout} />
 
       <div className="detail-shell">
-        <button type="button" className="back-link" onClick={() => navigate('/home')}>
+        <button
+          type="button"
+          className="back-link"
+          onClick={() =>
+            navigate('/loading', {
+              state: {
+                nextPath: '/home',
+                loadingSrc: pickPageLoadingSrc(),
+              },
+            })
+          }
+        >
           {t('back')}
         </button>
 

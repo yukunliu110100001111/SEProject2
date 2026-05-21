@@ -5,6 +5,7 @@ import { createOrder, getIngredients } from '../api/app';
 import Navbar from '../components/Navbar';
 import { useI18n } from '../i18n';
 import { getIngredientVisual } from '../utils/ingredientVisuals';
+import { pickPageLoadingSrc } from '../utils/loadingAnimations';
 import './Customize.css';
 
 const DEFAULT_GRAMS = 100;
@@ -276,7 +277,13 @@ const Customize = ({ auth, cartCount, onOpenCart, onLogout }) => {
         ],
       });
       setSelectedIngredients([]);
-      navigate('/orders', { state: { createdOrderId: response.orderId } });
+      navigate('/loading', {
+        state: {
+          nextPath: '/orders',
+          loadingSrc: pickPageLoadingSrc(),
+          routeState: { createdOrderId: response.orderId },
+        },
+      });
     } catch (err) {
       setSubmitError(err.message || t('failedSubmitCustomOrder'));
     } finally {

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useMemo, useState } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import 'premium-react-loaders/styles';
 import Dashboard from './views/Dashboard';
@@ -19,14 +19,47 @@ import {
   getSession,
   saveCart,
 } from './utils/storage';
+import { pickPageLoadingSrc } from './utils/loadingAnimations';
 
 const Loading = lazy(() => import('./views/Loading'));
+
+const loginLoadingState = { nextPath: '/login' };
+
+const LoginRoute = ({
+  isAuthenticated,
+  pendingLoadingSrc,
+  pendingNextPath,
+  onLoginSuccess,
+}) => {
+  const location = useLocation();
+
+  if (isAuthenticated) {
+    return (
+      <Navigate
+        to={pendingNextPath ? '/loading' : '/home'}
+        replace
+        state={
+          pendingNextPath
+            ? { nextPath: pendingNextPath, loadingSrc: pendingLoadingSrc }
+            : undefined
+        }
+      />
+    );
+  }
+
+  if (location.state?.fromLoading) {
+    return <Login onLoginSuccess={onLoginSuccess} />;
+  }
+
+  return <Navigate to="/loading" replace state={loginLoadingState} />;
+};
 
 function App() {
   const { t } = useI18n();
   const [auth, setAuth] = useState(getSession());
   const [cart, setCart] = useState(getCart());
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [pendingLoadingSrc, setPendingLoadingSrc] = useState(null);
   const [pendingNextPath, setPendingNextPath] = useState(null);
 
   const isAuthenticated = Boolean(auth.token);
@@ -39,6 +72,7 @@ function App() {
 
   const handleLogin = (nextPath = '/home') => {
     setAuth(getSession());
+    setPendingLoadingSrc(pickPageLoadingSrc());
     setPendingNextPath(nextPath);
   };
 
@@ -46,6 +80,7 @@ function App() {
     clearSession();
     saveCart([]);
     setIsCartOpen(false);
+    setPendingLoadingSrc(null);
     setPendingNextPath(null);
     setCart([]);
     setAuth({ token: null, role: null, userId: null, username: null });
@@ -119,15 +154,12 @@ function App() {
           <Route
             path="/login"
             element={
-              isAuthenticated ? (
-                <Navigate
-                  to={pendingNextPath ? '/loading' : '/home'}
-                  replace
-                  state={pendingNextPath ? { nextPath: pendingNextPath } : undefined}
-                />
-              ) : (
-                <Login onLoginSuccess={handleLogin} />
-              )
+              <LoginRoute
+                isAuthenticated={isAuthenticated}
+                pendingLoadingSrc={pendingLoadingSrc}
+                pendingNextPath={pendingNextPath}
+                onLoginSuccess={handleLogin}
+              />
             }
           />
           <Route
@@ -147,28 +179,34 @@ function App() {
           <Route
             path="/loading"
             element={
-              isAuthenticated ? (
-                <Suspense
-                  fallback={
-                    <div className="loading-wrapper">
-                      <div className="loading-fallback-shell">
-                        <span>GreenBite</span>
-                        <strong>{t('loadingExperience')}</strong>
-                      </div>
+              <Suspense
+                fallback={
+                  <div className="loading-wrapper">
+                    <div className="loading-fallback-shell">
+                      <span>GreenBite</span>
+                      <strong>{t('loadingExperience')}</strong>
                     </div>
-                  }
-                >
-                  <Loading auth={auth} onConsumeTarget={() => setPendingNextPath(null)} />
-                </Suspense>
-              ) : (
-                <Navigate to="/login" replace />
-              )
+                  </div>
+                }
+              >
+                <Loading
+                  auth={auth}
+                  onConsumeTarget={() => {
+                    setPendingLoadingSrc(null);
+                    setPendingNextPath(null);
+                  }}
+                />
+              </Suspense>
             }
           />
           <Route
             path="/home"
             element={
-              isAuthenticated ? <Home {...sharedProps} /> : <Navigate to="/login" replace />
+              isAuthenticated ? (
+                <Home {...sharedProps} />
+              ) : (
+                <Navigate to="/loading" replace state={loginLoadingState} />
+              )
             }
           />
           <Route
@@ -177,26 +215,38 @@ function App() {
               isAuthenticated ? (
                 <MealDetail {...sharedProps} />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/loading" replace state={loginLoadingState} />
               )
             }
           />
           <Route
             path="/orders"
             element={
-              isAuthenticated ? <Orders {...sharedProps} /> : <Navigate to="/login" replace />
+              isAuthenticated ? (
+                <Orders {...sharedProps} />
+              ) : (
+                <Navigate to="/loading" replace state={loginLoadingState} />
+              )
             }
           />
           <Route
             path="/customize"
             element={
-              isAuthenticated ? <Customize {...sharedProps} /> : <Navigate to="/login" replace />
+              isAuthenticated ? (
+                <Customize {...sharedProps} />
+              ) : (
+                <Navigate to="/loading" replace state={loginLoadingState} />
+              )
             }
           />
           <Route
             path="/profile"
             element={
-              isAuthenticated ? <Profile {...sharedProps} /> : <Navigate to="/login" replace />
+              isAuthenticated ? (
+                <Profile {...sharedProps} />
+              ) : (
+                <Navigate to="/loading" replace state={loginLoadingState} />
+              )
             }
           />
           <Route
@@ -205,7 +255,11 @@ function App() {
               isAuthenticated && (role === 'staff' || role === 'admin') ? (
                 <Staff {...sharedProps} />
               ) : (
-                <Navigate to="/home" replace />
+                <Navigate
+                  to={isAuthenticated ? '/home' : '/loading'}
+                  replace
+                  state={isAuthenticated ? undefined : loginLoadingState}
+                />
               )
             }
           />
@@ -215,15 +269,34 @@ function App() {
               isAuthenticated && role === 'admin' ? (
                 <Dashboard {...sharedProps} />
               ) : (
-                <Navigate to="/home" replace />
+                <Navigate
+                  to={isAuthenticated ? '/home' : '/loading'}
+                  replace
+                  state={isAuthenticated ? undefined : loginLoadingState}
+                />
               )
             }
           />
           <Route
             path="/"
-            element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
+            element={
+              <Navigate
+                to={isAuthenticated ? '/home' : '/loading'}
+                replace
+                state={isAuthenticated ? undefined : loginLoadingState}
+              />
+            }
           />
-          <Route path="*" element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />} />
+          <Route
+            path="*"
+            element={
+              <Navigate
+                to={isAuthenticated ? '/home' : '/loading'}
+                replace
+                state={isAuthenticated ? undefined : loginLoadingState}
+              />
+            }
+          />
         </Routes>
         {isAuthenticated && (
           <CartDrawer

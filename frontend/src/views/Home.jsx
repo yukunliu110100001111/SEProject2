@@ -5,6 +5,7 @@ import AiAssistantBubble from '../components/AiAssistantBubble';
 import MealCard from '../components/MealCard';
 import Navbar from '../components/Navbar';
 import { useI18n } from '../i18n';
+import { pickPageLoadingSrc } from '../utils/loadingAnimations';
 import './Home.css';
 
 const categories = [
@@ -246,13 +247,17 @@ const Home = ({
                             type="button"
                             className="showcase-card"
                             onClick={() =>
-                              navigate(`/meals/${meal.mealId}`, {
-                                state: recommendation
-                                  ? {
-                                      recommendationRequestId: recommendation.recommendationRequestId,
-                                      recommendationRankPosition: recommendation.recommendationRankPosition,
-                                    }
-                                  : undefined,
+                              navigate('/loading', {
+                                state: {
+                                  nextPath: `/meals/${meal.mealId}`,
+                                  loadingSrc: pickPageLoadingSrc(),
+                                  routeState: recommendation
+                                    ? {
+                                        recommendationRequestId: recommendation.recommendationRequestId,
+                                        recommendationRankPosition: recommendation.recommendationRankPosition,
+                                      }
+                                    : undefined,
+                                },
                               })
                             }
                           >
@@ -316,13 +321,17 @@ const Home = ({
                     })
                   }
                   onClick={() =>
-                    navigate(`/meals/${meal.mealId}`, {
-                      state: recommendation
-                        ? {
-                            recommendationRequestId: recommendation.recommendationRequestId,
-                            recommendationRankPosition: recommendation.recommendationRankPosition,
-                          }
-                        : undefined,
+                    navigate('/loading', {
+                      state: {
+                        nextPath: `/meals/${meal.mealId}`,
+                        loadingSrc: pickPageLoadingSrc(),
+                        routeState: recommendation
+                          ? {
+                              recommendationRequestId: recommendation.recommendationRequestId,
+                              recommendationRankPosition: recommendation.recommendationRankPosition,
+                            }
+                          : undefined,
+                      },
                     })
                   }
                 />

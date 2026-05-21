@@ -10,6 +10,7 @@ const PasswordField = ({
   inputRef,
   onFocus,
   onBlur,
+  onKeyUp,
 }) => {
   const { t } = useI18n();
   const toggleLabel = visible ? t('hidePassword') : t('showPassword');
@@ -24,6 +25,7 @@ const PasswordField = ({
         onChange={onChange}
         onFocus={onFocus}
         onBlur={onBlur}
+        onKeyUp={onKeyUp}
         required
       />
       <button

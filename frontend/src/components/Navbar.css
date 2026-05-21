@@ -39,7 +39,8 @@
   align-items: center;
 }
 
-.nav-links li a {
+.nav-links li a,
+.nav-link-button {
   text-decoration: none;
   color: #52796f;
   font-weight: 600;
@@ -48,13 +49,24 @@
   position: relative;
 }
 
+.nav-link-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
 .nav-links li a:hover,
-.nav-links li a.active-link {
+.nav-links li a.active-link,
+.nav-link-button:hover,
+.nav-link-button.active-link {
   color: #2d6a4f;
 }
 
 /* Active-state underline */
-.nav-links li a.active-link:not(.admin-link)::after {
+.nav-links li a.active-link:not(.admin-link)::after,
+.nav-link-button.active-link::after {
   content: '';
   position: absolute;
   width: 100%;
