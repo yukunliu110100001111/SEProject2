@@ -11,6 +11,15 @@ const suggestedPrompts = [
   'promptSearchChicken',
 ];
 
+const ambientPrompts = [
+  'ambientBestPicks',
+  'ambientOrderStatus',
+  'ambientQuickPicks',
+  'ambientLighter',
+  'ambientSearchChicken',
+  'ambientProtein',
+];
+
 const assistantAnimationSrc =
   'https://lottie.host/467cdd67-0db0-4297-b1bf-5a584298dfa4/gmkRwSfgvr.lottie';
 
@@ -25,6 +34,7 @@ const assistantAnimationEvents = [
 const AiAssistantBubble = ({ auth }) => {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
+  const [ambientText, setAmbientText] = useState('');
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -37,6 +47,8 @@ const AiAssistantBubble = ({ auth }) => {
   const [error, setError] = useState('');
   const [isAssistantJumping, setIsAssistantJumping] = useState(false);
   const messagesRef = useRef(null);
+  const ambientTimerRef = useRef(null);
+  const ambientHideTimerRef = useRef(null);
   const assistantLottieRef = useRef(null);
   const animationEventIndexRef = useRef(0);
   const assistantJumpTimerRef = useRef(null);
@@ -90,6 +102,41 @@ const AiAssistantBubble = ({ auth }) => {
       container.scrollTop = container.scrollHeight;
     }
   }, [isOpen, messages]);
+
+  useEffect(() => {
+    const clearAmbientTimers = () => {
+      if (ambientTimerRef.current) {
+        window.clearTimeout(ambientTimerRef.current);
+        ambientTimerRef.current = null;
+      }
+      if (ambientHideTimerRef.current) {
+        window.clearTimeout(ambientHideTimerRef.current);
+        ambientHideTimerRef.current = null;
+      }
+    };
+
+    if (isOpen) {
+      setAmbientText('');
+      clearAmbientTimers();
+      return clearAmbientTimers;
+    }
+
+    const scheduleAmbientPrompt = () => {
+      const nextDelay = 9000 + Math.floor(Math.random() * 9000);
+      ambientTimerRef.current = window.setTimeout(() => {
+        const nextPrompt =
+          ambientPrompts[Math.floor(Math.random() * ambientPrompts.length)];
+        setAmbientText(t(nextPrompt));
+        ambientHideTimerRef.current = window.setTimeout(() => {
+          setAmbientText('');
+          scheduleAmbientPrompt();
+        }, 3600);
+      }, nextDelay);
+    };
+
+    scheduleAmbientPrompt();
+    return clearAmbientTimers;
+  }, [isOpen, t]);
 
   const submitMessage = async (content) => {
     const nextContent = content.trim();
@@ -232,9 +279,15 @@ const AiAssistantBubble = ({ auth }) => {
         className={`ai-bubble-trigger ${isOpen ? 'is-open' : ''} ${
           isAssistantJumping ? 'is-jumping' : ''
         }`}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setAmbientText('');
+          setIsOpen(true);
+        }}
         aria-label={t('openAssistant')}
       >
+        <span className={`ai-bubble-ambient ${ambientText ? 'visible' : ''}`}>
+          {ambientText}
+        </span>
         <span className="ai-bubble-icon" aria-hidden="true">
           <DotLottieReact
             src={assistantAnimationSrc}
