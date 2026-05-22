@@ -1,4 +1,6 @@
 .ai-bubble-trigger {
+  --assistant-bubble-size: 82px;
+  --ambient-tail-size: 14px;
   position: fixed;
   right: 28px;
   bottom: 28px;
@@ -6,8 +8,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 82px;
-  height: 82px;
+  width: var(--assistant-bubble-size);
+  height: var(--assistant-bubble-size);
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -51,8 +53,8 @@
 
 .ai-bubble-ambient {
   position: absolute;
-  right: 42px;
-  bottom: 96px;
+  right: calc(var(--assistant-bubble-size) / 2 - 40px);
+  bottom: calc(var(--assistant-bubble-size) + 8px);
   width: max-content;
   max-width: 220px;
   padding: 11px 15px;
@@ -66,7 +68,7 @@
   line-height: 1.45;
   opacity: 0;
   transform: translate(6px, 10px) scale(0.94);
-  transform-origin: bottom left;
+  transform-origin: calc(100% - var(--assistant-bubble-size) / 2) bottom;
   pointer-events: none;
   transition: opacity 220ms ease, transform 220ms ease;
 }
@@ -74,10 +76,10 @@
 .ai-bubble-ambient::after {
   content: '';
   position: absolute;
-  left: 28px;
-  bottom: -7px;
-  width: 14px;
-  height: 14px;
+  right: calc(var(--assistant-bubble-size) / 2 - var(--ambient-tail-size) / 2);
+  bottom: calc(var(--ambient-tail-size) / -2);
+  width: var(--ambient-tail-size);
+  height: var(--ambient-tail-size);
   background: #f8f3ff;
   border-left: 1px solid rgba(181, 106, 240, 0.22);
   border-bottom: 1px solid rgba(181, 106, 240, 0.22);
@@ -417,8 +419,7 @@
   .ai-bubble-trigger {
     right: 16px;
     bottom: 16px;
-    width: 72px;
-    height: 72px;
+    --assistant-bubble-size: 72px;
   }
 
   .ai-bubble-dialog {
@@ -434,8 +435,6 @@
   }
 
   .ai-bubble-ambient {
-    right: 34px;
-    bottom: 84px;
     max-width: min(210px, calc(100vw - 72px));
     font-size: 12px;
   }
