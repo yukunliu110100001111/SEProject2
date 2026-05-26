@@ -165,6 +165,22 @@ const Home = ({
       });
   }, [activeCategories, meals, recommendationMap, search]);
 
+  const recommendedMeals = useMemo(
+    () =>
+      filteredMeals.filter(
+        (meal) => !recommendationMap.get(meal.mealId)?.allergenConflict
+      ),
+    [filteredMeals, recommendationMap]
+  );
+
+  const allergenConflictMeals = useMemo(
+    () =>
+      filteredMeals.filter(
+        (meal) => recommendationMap.get(meal.mealId)?.allergenConflict
+      ),
+    [filteredMeals, recommendationMap]
+  );
+
   const handleCategoryToggle = (category) => {
     setActiveCategories((current) => {
       if (category === 'all') {
@@ -233,13 +249,13 @@ const Home = ({
               </div>
             </div>
             </div>
-            {!loading && !error && filteredMeals.length > 0 && (
+            {!loading && !error && recommendedMeals.length > 0 && (
               <section className="top-showcase-section" aria-label={t('featuredMeals')}>
                 <div className="showcase-track-shell">
                   <div className="showcase-marquee">
                     {[0, 1].map((groupIndex) => (
                       <div className="showcase-track" key={groupIndex}>
-                        {filteredMeals.map((meal) => {
+                        {recommendedMeals.map((meal) => {
                           const recommendation = recommendationMap.get(meal.mealId);
                           return (
                           <button
@@ -305,9 +321,9 @@ const Home = ({
         {error && <div className="page-card error-card">{error}</div>}
 
         {!loading && !error && (
-          filteredMeals.length > 0 ? (
+          recommendedMeals.length > 0 ? (
             <div className="meal-grid">
-              {filteredMeals.map((meal) => {
+              {recommendedMeals.map((meal) => {
                 const recommendation = recommendationMap.get(meal.mealId);
                 return (
                 <MealCard
@@ -343,6 +359,41 @@ const Home = ({
           )
         )}
       </section>
+      {!loading && !error && allergenConflictMeals.length > 0 && (
+        <section className="list-section allergen-section">
+          <div className="list-header allergen-header">
+            <h2 className="list-title">{t('notRecommendedDueToAllergens')}</h2>
+            <p>{t('allergenSectionHint')}</p>
+          </div>
+          <div className="meal-grid">
+            {allergenConflictMeals.map((meal) => {
+              const recommendation = recommendationMap.get(meal.mealId);
+              return (
+                <MealCard
+                  key={meal.mealId}
+                  meal={meal}
+                  recommendation={recommendation}
+                  disabledAdd
+                  onClick={() =>
+                    navigate('/loading', {
+                      state: {
+                        nextPath: `/meals/${meal.mealId}`,
+                        loadingSrc: pickPageLoadingSrc(),
+                        routeState: recommendation
+                          ? {
+                              recommendationRequestId: recommendation.recommendationRequestId,
+                              recommendationRankPosition: recommendation.recommendationRankPosition,
+                            }
+                          : undefined,
+                      },
+                    })
+                  }
+                />
+              );
+            })}
+          </div>
+        </section>
+      )}
       <AiAssistantBubble auth={auth} />
     </div>
   );

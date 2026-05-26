@@ -481,7 +481,7 @@ public class AppService {
             List<MealIngredientRecord> ingredients = mealIngredientMapper.findByMealId(meal.getMealId());
             List<String> tags = tagMapper.findTagNamesByMealId(meal.getMealId());
             Set<String> mealAllergens = lowerSet(ingredientAllergenMapper.findAllergenNamesByMealId(meal.getMealId()));
-            boolean allergenConflict = mealAllergens.stream().anyMatch(userAllergens::contains);
+            boolean allergenConflict = hasAllergenConflict(userAllergens, mealAllergens, ingredients);
 
             double health = healthScore(pref, meal);
             double preference = preferenceScore(pref, ingredients);
@@ -520,6 +520,21 @@ public class AppService {
                     Long.valueOf(String.valueOf(row.get("mealId"))), "exposure", rankPosition, null);
         }
         return result;
+    }
+
+    private boolean hasAllergenConflict(Set<String> userAllergens, Set<String> mealAllergens,
+                                        List<MealIngredientRecord> ingredients) {
+        if (userAllergens.isEmpty()) {
+            return false;
+        }
+        if (mealAllergens.stream().anyMatch(userAllergens::contains)) {
+            return true;
+        }
+        return ingredients.stream()
+                .map(MealIngredientRecord::getIngredientName)
+                .filter(Objects::nonNull)
+                .map(name -> name.trim().toLowerCase())
+                .anyMatch(userAllergens::contains);
     }
 
     public Map<String, Object> orderDetail(AuthUser actor, Long orderId) {

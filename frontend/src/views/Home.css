@@ -297,6 +297,10 @@
   position: relative;
 }
 
+.allergen-section {
+  padding-top: 0;
+}
+
 .showcase-track-shell {
   overflow: hidden;
   width: 100%;
@@ -396,6 +400,21 @@
   color: #1b4332;
   font-size: 26px;
   font-weight: 800;
+}
+
+.allergen-header {
+  border-left-color: #b91c1c;
+}
+
+.allergen-header .list-title {
+  color: #7f1d1d;
+}
+
+.allergen-header p {
+  margin: 8px 0 0;
+  color: #991b1b;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .list-title span {

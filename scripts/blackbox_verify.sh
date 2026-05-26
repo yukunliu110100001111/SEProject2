@@ -78,7 +78,7 @@ jq -e '.data.preferences.allergens[0] == "nut"' /tmp/user-info.out >/dev/null ||
 
 code=$(curl -s -o /tmp/reco-allergen.out -w '%{http_code}' "${API_BASE}/recommendations?userId=1" -H "Authorization: Bearer ${customer_token}")
 assert_http 200 "$code" "recommendations with allergen"
-jq -e '.data[] | select(.mealId == 1 and .reason == "allergen conflict")' /tmp/reco-allergen.out >/dev/null || { echo "[FAIL] allergen preference not applied"; exit 1; }
+jq -e '.data[] | select(.mealId == 1 and .allergenConflict == true and .reason == "allergen conflict")' /tmp/reco-allergen.out >/dev/null || { echo "[FAIL] allergen preference not applied"; exit 1; }
 
 create_body='{"userId":1,"items":[{"mealId":1,"quantity":1}]}'
 code=$(curl -s -o /tmp/order-create.out -w '%{http_code}' -X POST "${API_BASE}/orders" -H "Authorization: Bearer ${customer_token}" -H 'Content-Type: application/json' -d "$create_body")

@@ -5,11 +5,12 @@ import './MealCard.css';
 const fallbackImage =
   'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=500';
 
-const MealCard = ({ meal, onAdd, onClick, recommendation }) => {
+const MealCard = ({ meal, onAdd, onClick, recommendation, disabledAdd = false }) => {
   const { t } = useI18n();
+  const addDisabled = disabledAdd || !onAdd;
 
   return (
-  <article className="meal-card">
+  <article className={`meal-card ${recommendation?.allergenConflict ? 'allergen-card' : ''}`}>
     <button className="meal-card-hitbox" type="button" onClick={onClick}>
       <div className="meal-image-wrapper">
         <img src={meal.imageUrl || fallbackImage} alt={meal.name} className="meal-image" />
@@ -50,9 +51,10 @@ const MealCard = ({ meal, onAdd, onClick, recommendation }) => {
       className="add-btn"
       type="button"
       onClick={onAdd}
+      disabled={addDisabled}
       aria-label={t('addMeal', { name: meal.name })}
     >
-      {t('addToCart')}
+      {addDisabled ? t('notRecommended') : t('addToCart')}
     </button>
   </article>
   );

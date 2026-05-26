@@ -199,6 +199,41 @@ class MvpFlowIntegrationTest {
     }
 
     @Test
+    void ingredient_name_allergen_should_mark_matching_meal_as_conflict() throws Exception {
+        String customerToken = tokenOf("customer1", "123456");
+
+        String prefUpdate = """
+                {
+                  "targetCalories":1800,
+                  "targetProtein":90,
+                  "isVegetarian":false,
+                  "allergens":["salmon"]
+                }
+                """;
+        mockMvc.perform(put("/users/1/preferences")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(prefUpdate))
+                .andExpect(status().isOk());
+
+        String recBody = mockMvc.perform(get("/recommendations").param("userId", "1")
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        JsonNode recRoot = objectMapper.readTree(recBody).get("data");
+        JsonNode conflictedMeal = null;
+        for (JsonNode item : recRoot) {
+            if (item.get("name").asText().toLowerCase().contains("salmon")) {
+                conflictedMeal = item;
+                break;
+            }
+        }
+        assertTrue(conflictedMeal != null);
+        assertEquals("allergen conflict", conflictedMeal.get("reason").asText());
+        assertTrue(conflictedMeal.get("allergenConflict").asBoolean());
+    }
+
+    @Test
     void allergens_and_meal_relations_should_support_optional_fields() throws Exception {
         String customerToken = tokenOf("customer1", "123456");
         String staffToken = tokenOf("staff1", "123456");

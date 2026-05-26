@@ -17,6 +17,11 @@
   box-shadow: 0 15px 30px rgba(45, 106, 79, 0.15);
 }
 
+.meal-card.allergen-card {
+  border-color: rgba(185, 28, 28, 0.18);
+  background: #fffafa;
+}
+
 .meal-card-hitbox {
   border: none;
   background: transparent;
@@ -107,6 +112,17 @@
   color: white;
 }
 
+.add-btn:disabled {
+  background: #fee2e2;
+  color: #991b1b;
+  cursor: not-allowed;
+}
+
+.add-btn:disabled:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 
 .meal-tags {
   display: flex;
@@ -148,4 +164,13 @@
 .meal-reason strong {
   color: #1b4332;
   font-size: 13px;
+}
+
+.allergen-card .meal-reason {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.allergen-card .meal-reason strong {
+  color: #7f1d1d;
 }
