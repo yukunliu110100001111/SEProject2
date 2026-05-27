@@ -32,6 +32,9 @@ public class HttpArkChatClient implements ArkChatClient {
     @Value("${ai.ark.fallback-api-key:}")
     private String fallbackApiKey;
 
+    @Value("${ai.ark.protocol:auto}")
+    private String protocol;
+
     public HttpArkChatClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
@@ -46,42 +49,71 @@ public class HttpArkChatClient implements ArkChatClient {
             throw new BizException(503, 503, "AI assistant is not configured. Please set AI_ARK_API_KEY");
         }
         try {
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("model", model);
-            payload.put("temperature", 0.2);
-            payload.put("input", buildInput(messages));
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(normalizeBaseUrl(baseUrl) + "/responses"))
-                    .timeout(Duration.ofSeconds(60))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + resolvedApiKey)
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < HttpStatus.OK.value() || response.statusCode() >= 300) {
-                throw new BizException(502, 502, "Ark model request failed: " + response.body());
+            String normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+            if (useChatCompletions(normalizedBaseUrl)) {
+                return chatCompletions(messages, model, resolvedApiKey, normalizedBaseUrl);
             }
-
-            JsonNode root = objectMapper.readTree(response.body());
-            String outputText = root.path("output_text").asText("");
-            if (!outputText.isBlank()) {
-                return outputText;
-            }
-
-            JsonNode contentNode = root.path("output");
-            String content = readContent(contentNode);
-            if (content.isBlank()) {
-                throw new BizException(502, 502, "Ark model returned empty content");
-            }
-            return content;
+            return responses(messages, model, resolvedApiKey, normalizedBaseUrl);
         } catch (IOException | InterruptedException ex) {
             if (ex instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            throw new BizException(502, 502, "Ark model request failed");
+            throw new BizException(502, 502, "AI model request failed");
         }
+    }
+
+    private String responses(List<Map<String, String>> messages, String model, String resolvedApiKey,
+                             String normalizedBaseUrl) throws IOException, InterruptedException {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("temperature", 0.2);
+        payload.put("input", buildInput(messages));
+
+        HttpRequest request = requestBuilder(normalizedBaseUrl + "/responses", resolvedApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < HttpStatus.OK.value() || response.statusCode() >= 300) {
+            throw new BizException(502, 502, "AI model request failed: " + response.body());
+        }
+
+        JsonNode root = objectMapper.readTree(response.body());
+        String outputText = root.path("output_text").asText("");
+        if (!outputText.isBlank()) {
+            return outputText;
+        }
+
+        JsonNode contentNode = root.path("output");
+        String content = readContent(contentNode);
+        if (content.isBlank()) {
+            throw new BizException(502, 502, "AI model returned empty content");
+        }
+        return content;
+    }
+
+    private String chatCompletions(List<Map<String, String>> messages, String model, String resolvedApiKey,
+                                   String normalizedBaseUrl) throws IOException, InterruptedException {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", model);
+        payload.put("temperature", 0.2);
+        payload.put("messages", messages);
+
+        HttpRequest request = requestBuilder(normalizedBaseUrl + "/chat/completions", resolvedApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < HttpStatus.OK.value() || response.statusCode() >= 300) {
+            throw new BizException(502, 502, "AI model request failed: " + response.body());
+        }
+
+        JsonNode root = objectMapper.readTree(response.body());
+        String content = root.path("choices").path(0).path("message").path("content").asText("");
+        if (content.isBlank()) {
+            throw new BizException(502, 502, "AI model returned empty content");
+        }
+        return content;
     }
 
     private String resolvedApiKey() {
@@ -89,6 +121,30 @@ public class HttpArkChatClient implements ArkChatClient {
             return apiKey;
         }
         return fallbackApiKey == null ? "" : fallbackApiKey;
+    }
+
+    private HttpRequest.Builder requestBuilder(String url, String resolvedApiKey) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(60))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + resolvedApiKey);
+        if (url.contains("openrouter.ai")) {
+            builder.header("HTTP-Referer", "https://greenbite.local")
+                    .header("X-Title", "GreenBite");
+        }
+        return builder;
+    }
+
+    private boolean useChatCompletions(String normalizedBaseUrl) {
+        String normalizedProtocol = protocol == null ? "auto" : protocol.trim().toLowerCase();
+        if ("chat".equals(normalizedProtocol) || "chat-completions".equals(normalizedProtocol)) {
+            return true;
+        }
+        if ("responses".equals(normalizedProtocol)) {
+            return false;
+        }
+        return normalizedBaseUrl.contains("openrouter.ai");
     }
 
     private List<Map<String, Object>> buildInput(List<Map<String, String>> messages) {

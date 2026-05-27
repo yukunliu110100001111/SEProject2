@@ -115,6 +115,35 @@ class AiAssistantIntegrationTest {
     }
 
     @Test
+    void ai_chat_should_extract_json_command_from_mixed_model_text() throws Exception {
+        stubArkChatClient.enqueue("""
+                Let me check the meal details to make sure none contain salmon.
+
+                {"type":"tool_call","tool":"get_meal_detail","arguments":{"mealId":1}}
+                """);
+        stubArkChatClient.enqueue("""
+                {"type":"final","answer":"Meal 1 does not contain salmon based on its ingredient list."}
+                """);
+
+        String body = mockMvc.perform(post("/ai/chat")
+                        .header("Authorization", "Bearer " + tokenOf("customer1", "123456"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "messages":[
+                                    {"role":"user","content":"Check whether meal 1 contains salmon."}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        JsonNode root = objectMapper.readTree(body).get("data");
+        assertEquals("Meal 1 does not contain salmon based on its ingredient list.", root.get("reply").asString());
+        assertEquals("get_meal_detail", root.get("toolCalls").get(0).asString());
+    }
+
+    @Test
     void ai_chat_should_require_confirmation_before_writing_preferences() throws Exception {
         stubArkChatClient.enqueue("""
                 {"type":"propose_action","action":"update_preferences","arguments":{"targetCalories":1700,"targetProtein":95,"isVegetarian":true,"allergens":["nut"]},"summary":"I will update your calorie target to 1700, protein target to 95, and enable vegetarian preference after you confirm."}

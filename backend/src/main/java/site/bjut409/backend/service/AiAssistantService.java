@@ -173,14 +173,67 @@ public class AiAssistantService {
                     .replaceFirst("^```\\s*", "")
                     .replaceFirst("\\s*```$", "");
         }
-        if (!normalized.startsWith("{")) {
+        String json = normalized.startsWith("{") ? normalized : extractJsonObject(normalized);
+        if (json == null) {
             return null;
         }
         try {
-            return objectMapper.readTree(normalized);
+            return objectMapper.readTree(json);
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    private String extractJsonObject(String content) {
+        int start = content.indexOf('{');
+        while (start >= 0) {
+            int end = findJsonObjectEnd(content, start);
+            if (end > start) {
+                String candidate = content.substring(start, end + 1);
+                try {
+                    objectMapper.readTree(candidate);
+                    return candidate;
+                } catch (Exception ignored) {
+                    start = content.indexOf('{', start + 1);
+                    continue;
+                }
+            }
+            start = content.indexOf('{', start + 1);
+        }
+        return null;
+    }
+
+    private int findJsonObjectEnd(String content, int start) {
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        for (int index = start; index < content.length(); index++) {
+            char current = content.charAt(index);
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (current == '\\' && inString) {
+                escaped = true;
+                continue;
+            }
+            if (current == '"') {
+                inString = !inString;
+                continue;
+            }
+            if (inString) {
+                continue;
+            }
+            if (current == '{') {
+                depth++;
+            } else if (current == '}') {
+                depth--;
+                if (depth == 0) {
+                    return index;
+                }
+            }
+        }
+        return -1;
     }
 
     private boolean isToolCall(String type) {

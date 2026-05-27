@@ -68,8 +68,19 @@ AI assistant calls use `AI_ARK_API_KEY` when it is set. If it is missing or blan
 | `AI_ARK_API_KEY` | No | configured demo key | Overrides the fallback Ark API key |
 | `AI_ARK_MODEL` | No | `doubao-seed-2-0-pro-260215` | Ark model name |
 | `AI_ARK_BASE_URL` | No | `https://ark.cn-beijing.volces.com/api/v3` | Ark API base URL |
+| `AI_ARK_PROTOCOL` | No | `auto` | AI API protocol: `responses`, `chat`, or `auto`. Use `chat` for OpenRouter/OpenAI-compatible chat completions. |
 
 Prefer setting real API keys in your shell or `.env` file before Docker startup.
+
+OpenRouter example:
+
+```bash
+AI_ARK_BASE_URL=https://openrouter.ai/api/v1 \
+AI_ARK_PROTOCOL=chat \
+AI_ARK_MODEL=openai/gpt-4.1-mini \
+AI_ARK_API_KEY=your_openrouter_key_here \
+docker compose up --build
+```
 
 ## Run With Docker
 
