@@ -19,6 +19,7 @@ import site.bjut409.backend.service.DemoDataService;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -144,6 +145,36 @@ class AiAssistantIntegrationTest {
     }
 
     @Test
+    void ai_chat_high_protein_keyword_should_return_matching_meals_to_model() throws Exception {
+        stubArkChatClient.enqueue("""
+                {"type":"tool_call","tool":"search_meals","arguments":{"keyword":"high-protein"}}
+                """);
+        stubArkChatClient.enqueue("""
+                {"type":"final","answer":"Chicken Salad is a high-protein option."}
+                """);
+
+        String body = mockMvc.perform(post("/ai/chat")
+                        .header("Authorization", "Bearer " + tokenOf("customer1", "123456"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "messages":[
+                                    {"role":"user","content":"Find me a high-protein meal."}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        JsonNode root = objectMapper.readTree(body).get("data");
+        assertEquals("Chicken Salad is a high-protein option.", root.get("reply").asString());
+        assertEquals("search_meals", root.get("toolCalls").get(0).asString());
+        assertTrue(stubArkChatClient.calls.get(1).stream()
+                .anyMatch(message -> message.get("content").contains("Chicken Salad")));
+    }
+
+
+    @Test
     void ai_chat_should_require_confirmation_before_writing_preferences() throws Exception {
         stubArkChatClient.enqueue("""
                 {"type":"propose_action","action":"update_preferences","arguments":{"targetCalories":1700,"targetProtein":95,"isVegetarian":true,"allergens":["nut"]},"summary":"I will update your calorie target to 1700, protein target to 95, and enable vegetarian preference after you confirm."}
@@ -224,6 +255,7 @@ class AiAssistantIntegrationTest {
     static class StubArkChatClient implements ArkChatClient {
 
         private final Queue<String> responses = new ArrayDeque<>();
+        private final List<List<Map<String, String>>> calls = new ArrayList<>();
 
         void enqueue(String response) {
             responses.add(response);
@@ -231,12 +263,14 @@ class AiAssistantIntegrationTest {
 
         void reset() {
             responses.clear();
+            calls.clear();
         }
 
         @Override
         public String chat(List<Map<String, String>> messages, String model) {
             assertNotNull(messages);
             assertNotNull(model);
+            calls.add(List.copyOf(messages));
             String next = responses.poll();
             if (next == null) {
                 throw new IllegalStateException("No stubbed AI response left");

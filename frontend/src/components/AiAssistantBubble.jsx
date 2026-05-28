@@ -69,6 +69,7 @@ const AiAssistantBubble = ({ auth }) => {
   const [confirmingActionId, setConfirmingActionId] = useState('');
   const [error, setError] = useState('');
   const [isAssistantJumping, setIsAssistantJumping] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const messagesRef = useRef(null);
   const ambientTimerRef = useRef(null);
   const ambientHideTimerRef = useRef(null);
@@ -328,7 +329,7 @@ const AiAssistantBubble = ({ auth }) => {
       {isOpen && (
         <div className="ai-bubble-overlay" onClick={() => setIsOpen(false)}>
           <section
-            className="ai-bubble-dialog"
+            className={`ai-bubble-dialog ${isExpanded ? 'is-expanded' : ''}`}
             onClick={(event) => event.stopPropagation()}
           >
             <header className="ai-bubble-header">
@@ -336,14 +337,25 @@ const AiAssistantBubble = ({ auth }) => {
                 <span className="ai-bubble-kicker">GreenBite</span>
                 <h2>{t('assistant')}</h2>
               </div>
-              <button
-                type="button"
-                className="ai-bubble-close"
-                onClick={() => setIsOpen(false)}
-                aria-label={t('closeAssistant')}
-              >
-                ×
-              </button>
+              <div className="ai-bubble-window-actions">
+                <button
+                  type="button"
+                  className="ai-bubble-window-btn"
+                  onClick={() => setIsExpanded((current) => !current)}
+                  aria-label={isExpanded ? t('restoreAssistant') : t('expandAssistant')}
+                  title={isExpanded ? t('restoreAssistant') : t('expandAssistant')}
+                >
+                  {isExpanded ? '↙' : '↗'}
+                </button>
+                <button
+                  type="button"
+                  className="ai-bubble-close"
+                  onClick={() => setIsOpen(false)}
+                  aria-label={t('closeAssistant')}
+                >
+                  ×
+                </button>
+              </div>
             </header>
 
             <div className="ai-bubble-suggestions">
@@ -415,7 +427,7 @@ const AiAssistantBubble = ({ auth }) => {
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder={t('typeMessage')}
-                rows={3}
+                rows={2}
               />
               <div className="ai-bubble-form-actions">
                 <button type="submit" disabled={loading || !input.trim()}>

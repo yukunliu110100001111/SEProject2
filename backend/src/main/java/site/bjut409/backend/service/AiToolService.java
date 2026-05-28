@@ -60,9 +60,25 @@ public class AiToolService {
     private Object searchMeals(AuthUser actor, JsonNode arguments) {
         String keyword = textArg(arguments, "keyword", "");
         String normalized = keyword.trim().toLowerCase();
-        return appService.listMeals(actor).stream()
-                .filter(meal -> normalized.isBlank()
-                        || String.valueOf(meal.get("name")).toLowerCase().contains(normalized))
+        boolean highProteinIntent = normalized.contains("high-protein")
+                || normalized.contains("high protein")
+                || normalized.contains("protein-rich");
+        String tag = textArg(arguments, "tag", highProteinIntent ? "high-protein" : "");
+        Integer minProtein = intArg(arguments, "minProtein", highProteinIntent ? 25 : null);
+        Boolean lowCarbonOnly = booleanArg(arguments, "lowCarbonOnly", normalized.contains("low-carbon")
+                || normalized.contains("low carbon"));
+        String effectiveKeyword = highProteinIntent || Boolean.TRUE.equals(lowCarbonOnly)
+                ? keyword.replaceAll("(?i)high[-\\s]?protein|protein-rich|low[-\\s]?carbon", "").trim()
+                : keyword;
+
+        List<Map<String, Object>> meals = appService.listMeals(actor, effectiveKeyword, tag, lowCarbonOnly);
+        if (highProteinIntent && meals.isEmpty()) {
+            meals = appService.listMeals(actor, effectiveKeyword, null, lowCarbonOnly);
+        }
+        Integer proteinThreshold = minProtein;
+        return meals.stream()
+                .filter(meal -> proteinThreshold == null
+                        || intValue(meal.get("protein")) >= proteinThreshold)
                 .toList();
     }
 
@@ -135,6 +151,20 @@ public class AiToolService {
             return defaultValue;
         }
         return arguments.get(field).asText(defaultValue);
+    }
+
+    private Integer intArg(JsonNode arguments, String field, Integer defaultValue) {
+        if (arguments == null || arguments.get(field) == null || arguments.get(field).isNull()) {
+            return defaultValue;
+        }
+        return arguments.get(field).asInt();
+    }
+
+    private Boolean booleanArg(JsonNode arguments, String field, Boolean defaultValue) {
+        if (arguments == null || arguments.get(field) == null || arguments.get(field).isNull()) {
+            return defaultValue;
+        }
+        return arguments.get(field).asBoolean();
     }
 
     private Integer intValue(Object value) {

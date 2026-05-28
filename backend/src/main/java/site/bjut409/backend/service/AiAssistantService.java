@@ -144,7 +144,7 @@ public class AiAssistantService {
                 Available tools:
                 - get_user_profile { "userId"?: number }
                 - get_recommendations { "userId"?: number }
-                - search_meals { "keyword"?: string }
+                - search_meals { "keyword"?: string, "tag"?: string, "minProtein"?: number, "lowCarbonOnly"?: boolean }
                 - get_meal_detail { "mealId": number }
                 - get_inventory_summary {}
                 - get_order_status { "orderId": number }
@@ -160,6 +160,7 @@ public class AiAssistantService {
                 - If the user asks for a write action, do not execute it directly. First output:
                   {"type":"propose_action","action":"action_name","arguments":{...},"summary":"English confirmation text for the user"}
                 - Call at most one tool each turn.
+                - For high-protein meal requests, use search_meals with minProtein or tag "high-protein"; do not search the literal keyword "high-protein" as a meal name.
                 - Do not reveal implementation details, secrets, or database connection information.
                 - Always answer in concise, direct English, even if the user writes in another language.
                 """.formatted(actor.userId(), actor.username(), actor.role());
